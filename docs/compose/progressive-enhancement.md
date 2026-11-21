@@ -283,14 +283,9 @@ export const actions = {
 <form method="POST" use:enhance>
   <input type="hidden" name="next" value={data.next ?? ''} />
   <label>Email<input name="email" type="email" required autocomplete="email" /></label>
-  <label
-    >Password<input
-      name="password"
-      type="password"
-      required
-      autocomplete="current-password"
-    /></label
-  >
+  <label>
+    Password<input name="password" type="password" required autocomplete="current-password" />
+  </label>
   <button>Sign in</button>
 </form>
 ```

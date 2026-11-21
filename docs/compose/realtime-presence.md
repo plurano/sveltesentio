@@ -327,8 +327,10 @@ posture preserves UX for the rest of the room.
   ></div>
   <span
     class="pointer-events-none absolute -top-5 rounded px-1 text-xs text-white"
-    style:background-color={state.user.color}>{state.user.name}</span
+    style:background-color={state.user.color}
   >
+    {state.user.name}
+  </span>
 {/if}
 ```
 
