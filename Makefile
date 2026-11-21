@@ -3,9 +3,17 @@
 
 .PHONY: setup dev build lint typecheck test ci clean
 
-# Bootstrap dev environment (run once after cloning)
+# Bootstrap dev environment (run once after cloning).
+# Node.js 25 removes bundled Corepack; use it when on PATH, otherwise require standalone pnpm.
 setup:
-	corepack enable
+	@if command -v corepack >/dev/null 2>&1; then \
+		corepack enable; \
+	elif command -v pnpm >/dev/null 2>&1; then \
+		:; \
+	else \
+		printf '%s\n' "Neither corepack nor pnpm is on PATH (Node.js >=25 no longer bundles Corepack). Install pnpm: https://pnpm.io/installation" >&2; \
+		exit 1; \
+	fi
 	pnpm install
 	lefthook install
 	@echo "Setup complete. Run 'make dev' to start development."

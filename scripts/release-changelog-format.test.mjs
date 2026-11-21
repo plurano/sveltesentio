@@ -185,6 +185,7 @@ const step = (...lines) => lines.map((line) => `${STEP_BODY}${line}`).join('\n')
 
 const defaultTrigger = 'on:\n  push:\n    branches: [main, release-please--branches--main]\n';
 const defaultJobGate = "    if: ${{ github.ref == 'refs/heads/release-please--branches--main' }}\n";
+const setupPnpmAction = 'pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1';
 
 const formatStepFixture = (extra = {}) => {
 	const prettierCmd =
@@ -209,12 +210,12 @@ const formatStepFixture = (extra = {}) => {
 			: [`  ${prettierCmd}`, `  ${escapeCmd}`]
 		: [`  ${prettierCmd}`];
 	return (
+		`${STEP_START}uses: ${setupPnpmAction}\n` +
 		`${STEP_START}name: Format the release change logs\n` +
 		`${step(
 			'env:',
 			envEntry,
 			'run: |',
-			'  corepack enable',
 			'  pnpm install --frozen-lockfile',
 			...runAfterInstall,
 			'  # Loop safety: format commit re-triggers push; prettier diff quiet -> exit 0.',
