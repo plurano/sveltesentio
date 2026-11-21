@@ -12,6 +12,14 @@ function renderTable() {
 	return render(PeopleTableHarness);
 }
 
+/** Mounts the table harness and resolves the grid and named column header. */
+function renderHeader(label: string): { grid: HTMLElement; header: HTMLElement } {
+	const { getByRole } = renderTable();
+	const grid = getByRole('grid');
+	const header = within(grid).getByRole('columnheader', { name: label });
+	return { grid, header };
+}
+
 /** Cell text for the `name` column (col 1) across body rows, in render order. */
 function nameColumn(grid: HTMLElement): string[] {
 	const bodyRows = within(grid)
@@ -58,9 +66,7 @@ describe('<DataTable>', () => {
 	});
 
 	it('sorts ascending on header click and reflects aria-sort=ascending', async () => {
-		const { getByRole } = renderTable();
-		const grid = getByRole('grid');
-		const name = within(grid).getByRole('columnheader', { name: 'Name' });
+		const { grid, header: name } = renderHeader('Name');
 
 		await fireEvent.click(name);
 
@@ -69,9 +75,7 @@ describe('<DataTable>', () => {
 	});
 
 	it('cycles none -> ascending -> descending -> none across repeated clicks', async () => {
-		const { getByRole } = renderTable();
-		const grid = getByRole('grid');
-		const name = within(grid).getByRole('columnheader', { name: 'Name' });
+		const { grid, header: name } = renderHeader('Name');
 
 		await fireEvent.click(name);
 		expect(name).toHaveAttribute('aria-sort', 'ascending');
@@ -86,9 +90,7 @@ describe('<DataTable>', () => {
 	});
 
 	it('sorts via the Enter key on a focused header', async () => {
-		const { getByRole } = renderTable();
-		const grid = getByRole('grid');
-		const age = within(grid).getByRole('columnheader', { name: 'Age' });
+		const { grid, header: age } = renderHeader('Age');
 
 		await fireEvent.keyDown(age, { key: 'Enter' });
 
@@ -98,18 +100,14 @@ describe('<DataTable>', () => {
 	});
 
 	it('sorts via the Space key on a focused header', async () => {
-		const { getByRole } = renderTable();
-		const grid = getByRole('grid');
-		const name = within(grid).getByRole('columnheader', { name: 'Name' });
+		const { header: name } = renderHeader('Name');
 
 		await fireEvent.keyDown(name, { key: ' ' });
 		expect(name).toHaveAttribute('aria-sort', 'ascending');
 	});
 
 	it('does not sort when a non-sortable header is activated', async () => {
-		const { getByRole } = renderTable();
-		const grid = getByRole('grid');
-		const id = within(grid).getByRole('columnheader', { name: 'ID' });
+		const { grid, header: id } = renderHeader('ID');
 
 		await fireEvent.click(id);
 		// Order unchanged; no aria-sort appears on the non-sortable column.
