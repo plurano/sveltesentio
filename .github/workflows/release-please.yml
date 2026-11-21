@@ -45,6 +45,8 @@ jobs:
         with:
           node-version: '24'
 
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+
       # Format release change logs: release-please generates `*` bullets and
       # double blank lines (gap C14-13) which fail prettier and markdownlint.
       # Bare `*` or `_` next to whitespace fail MD037; backslash escapes render the same.
@@ -58,7 +60,6 @@ jobs:
           BRANCH: ${{ github.ref_name }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          corepack enable
           pnpm install --frozen-lockfile
           pnpm exec prettier --write CHANGELOG.md 'packages/*/CHANGELOG.md'
           node scripts/release-changelog-escape.mjs CHANGELOG.md packages/*/CHANGELOG.md
@@ -145,10 +146,13 @@ jobs:
           key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: ${{ runner.os }}-pnpm-
 
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        if: ${{ steps.release.outputs.releases_created == 'true' || github.event_name == 'workflow_dispatch' }}
+
       # (ignored-build-scripts are tolerated via pnpm-workspace.yaml
       # `strictDepBuilds: false` — esbuild/sharp/etc. aren't needed to pack src/.)
       - if: ${{ steps.release.outputs.releases_created == 'true' || github.event_name == 'workflow_dispatch' }}
-        run: corepack enable && pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       # CycloneDX SBOM for the release (§2.5), generated before any package
       # reaches the registry: a release without its SBOM does not publish.

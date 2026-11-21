@@ -65,8 +65,11 @@ jobs:
           path: ~/.pnpm-store
           key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: ${{ runner.os }}-pnpm-
+      # Node.js 25 removes bundled Corepack; action-setup reads packageManager from package.json.
+      - &setup_pnpm
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
       - &pnpm_install
-        run: corepack enable && pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
       - name: Detect affected packages and surfaces
         id: changes
         env:
@@ -90,6 +93,7 @@ jobs:
         with:
           node-version: '24'
       - *cache_pnpm
+      - *setup_pnpm
       - *pnpm_install
       - name: Lint affected packages
         env:
@@ -155,6 +159,7 @@ jobs:
       - *checkout
       - *setup_node
       - *cache_pnpm
+      - *setup_pnpm
       - *pnpm_install
       - name: Typecheck affected packages
         env:
@@ -197,6 +202,7 @@ jobs:
       - *checkout
       - *setup_node
       - *cache_pnpm
+      - *setup_pnpm
       - *pnpm_install
       - name: Test affected packages
         env:
@@ -227,6 +233,7 @@ jobs:
       - *checkout
       - *setup_node
       - *cache_pnpm
+      - *setup_pnpm
       - *pnpm_install
       - name: Build affected packages
         env:
@@ -257,6 +264,7 @@ jobs:
       - *checkout
       - *setup_node
       - *cache_pnpm
+      - *setup_pnpm
       - *pnpm_install
       # Every story is rendered in Chromium, Firefox and WebKit; an axe violation or a render error fails the run.
       # Stories come from every package, so the run is not narrowed to the affected ones.
@@ -290,6 +298,7 @@ jobs:
       - *checkout
       - *setup_node
       - *cache_pnpm
+      - *setup_pnpm
       - *pnpm_install
       # auth, media, shell and apps/docs define `test:e2e`; the filter narrows the run to the affected ones.
       - name: Run end-to-end tests of affected packages
@@ -332,6 +341,7 @@ jobs:
       - *checkout
       - *setup_node
       - *cache_pnpm
+      - *setup_pnpm
       - *pnpm_install
       - name: Run visual regression tests
         env:
@@ -366,6 +376,7 @@ jobs:
       - *checkout
       - *setup_node
       - *cache_pnpm
+      - *setup_pnpm
       - *pnpm_install
       - run: pnpm audit --audit-level=high
 
@@ -520,6 +531,7 @@ jobs:
         with:
           node-version: '24'
       - *cache_pnpm
+      - *setup_pnpm
       - *pnpm_install
       - name: Check that every label an issue form names exists
         env:

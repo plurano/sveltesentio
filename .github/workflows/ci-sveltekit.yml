@@ -91,8 +91,11 @@ jobs:
           path: ~/.pnpm-store
           key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: ${{ runner.os }}-pnpm-
+      # Node.js 25 removes bundled Corepack; action-setup reads packageManager from package.json.
+      - &setup_pnpm
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
       - &pnpm_install
-        run: corepack enable && pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
       - run: pnpm lint
 
   typecheck:
@@ -106,6 +109,7 @@ jobs:
       - *checkout
       - *setup_node
       - *cache_pnpm
+      - *setup_pnpm
       - *pnpm_install
       - run: pnpm typecheck
 
@@ -120,6 +124,7 @@ jobs:
       - *checkout
       - *setup_node
       - *cache_pnpm
+      - *setup_pnpm
       - *pnpm_install
       # Options after the script name reach the test script. `pnpm test -- --coverage`
       # hands vitest a literal `--` instead, after which it ignores --coverage and
@@ -174,6 +179,7 @@ jobs:
       - *checkout
       - *setup_node
       - *cache_pnpm
+      - *setup_pnpm
       - *pnpm_install
       - run: pnpm build
 
@@ -188,6 +194,7 @@ jobs:
       - *checkout
       - *setup_node
       - *cache_pnpm
+      - *setup_pnpm
       - *pnpm_install
       - run: pnpm audit --audit-level=high
 
@@ -203,6 +210,7 @@ jobs:
       - *checkout
       - *setup_node
       - *cache_pnpm
+      - *setup_pnpm
       - *pnpm_install
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:e2e
