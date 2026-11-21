@@ -74,15 +74,19 @@ The tested logic lives in `./carousel`; this file is a thin, a11y-correct view.
 			class="ssentio-carousel__btn"
 			style="min-width:{targetPx}px;min-height:{targetPx}px"
 			aria-label="Previous slide"
-			onclick={() => scrollByPage(-1)}>‹</button
+			onclick={() => scrollByPage(-1)}
 		>
+			‹
+		</button>
 		<button
 			type="button"
 			class="ssentio-carousel__btn"
 			style="min-width:{targetPx}px;min-height:{targetPx}px"
 			aria-label="Next slide"
-			onclick={() => scrollByPage(1)}>›</button
+			onclick={() => scrollByPage(1)}
 		>
+			›
+		</button>
 	</div>
 </section>
 

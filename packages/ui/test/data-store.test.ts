@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import type { ColumnDef } from '../src/data/model.js';
 import type * as DataTableModule from '../src/data/createDataTable.svelte.js';
+import { userColumns as columns, users as seed, type User } from './users-fixture.js';
 
 type DataTableStore<T> = DataTableModule.DataTableStore<T>;
 type InitialState = DataTableModule.DataTableOptions<User>['initialState'];
@@ -20,33 +20,6 @@ type InitialState = DataTableModule.DataTableOptions<User>['initialState'];
  * has no multi-sort and no row-selection API, so those are not exercised here
  * (see the pure-model coverage in data-model.test.ts).
  */
-
-interface User {
-	readonly id: number;
-	readonly name: string;
-	readonly role: string;
-	readonly active: boolean;
-}
-
-const seed: readonly User[] = [
-	{ id: 1, name: 'Charlie', role: 'admin', active: true },
-	{ id: 2, name: 'alice', role: 'user', active: false },
-	{ id: 3, name: 'Bob', role: 'user', active: true },
-	{ id: 4, name: 'Dave', role: 'editor', active: false },
-];
-
-const columns: readonly ColumnDef<User>[] = [
-	{ id: 'name', header: 'Name', accessor: (u) => u.name },
-	{ id: 'role', header: 'Role', accessor: (u) => u.role },
-	{ id: 'id', header: 'ID', accessor: (u) => u.id },
-	{
-		id: 'active',
-		header: 'Active',
-		accessor: (u) => u.active,
-		filterable: false,
-		sortable: false,
-	},
-];
 
 const g = globalThis as unknown as { $state?: unknown; $effect?: unknown };
 let dispose: (() => void) | undefined;

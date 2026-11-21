@@ -6,30 +6,9 @@ import {
 	setPageIndex,
 	setPageSize,
 	toggleSort,
-	type ColumnDef,
 	type TableState,
 } from '../src/data/model.js';
-
-interface User {
-	id: number;
-	name: string;
-	role: string;
-	active: boolean;
-}
-
-const users: User[] = [
-	{ id: 1, name: 'Charlie', role: 'admin', active: true },
-	{ id: 2, name: 'alice', role: 'user', active: false },
-	{ id: 3, name: 'Bob', role: 'user', active: true },
-	{ id: 4, name: 'Dave', role: 'editor', active: false },
-];
-
-const columns: ColumnDef<User>[] = [
-	{ id: 'name', header: 'Name', accessor: (u) => u.name },
-	{ id: 'role', header: 'Role', accessor: (u) => u.role },
-	{ id: 'id', header: 'ID', accessor: (u) => u.id },
-	{ id: 'active', header: 'Active', accessor: (u) => u.active, filterable: false, sortable: false },
-];
+import { userColumns as columns, users } from './users-fixture.js';
 
 describe('toggleSort', () => {
 	it('cycles none → asc → desc → none and resets page', () => {

@@ -399,15 +399,14 @@ skip tax calc; otherwise charge normally.
 <!-- src/routes/admin/tax/reports/+page.svelte -->
 <h1>Tax reports</h1>
 <p>
-  These reports pull from Stripe Tax registration reports; always reconcile against our local <code
-    >invoiceTaxSnapshot</code
-  > table before filing.
+  These reports pull from Stripe Tax registration reports; always reconcile against our local <code>
+    invoiceTaxSnapshot
+  </code> table before filing.
 </p>
 <table>
-  <thead
-    ><tr><th>Period</th><th>Jurisdiction</th><th>Gross</th><th>Tax</th><th>Stripe report</th></tr
-    ></thead
-  >
+  <thead>
+    <tr><th>Period</th><th>Jurisdiction</th><th>Gross</th><th>Tax</th><th>Stripe report</th></tr>
+  </thead>
   <tbody>
     {#each data.periods as p}
       <tr>
