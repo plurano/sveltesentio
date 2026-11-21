@@ -361,8 +361,8 @@ arca is the reference integration (see
   compile-time. Schedule deploys.
 - **Probing IP geo for locale.** Locale ≠ country. Use browser
   Accept-Language.
-- **Shipping `@inlang/paraglide-sveltekit` on v2.** Deprecated.
-  Remove.
+- **Shipping `@inlang/paraglide-sveltekit`.** Deprecated since
+  Paraglide 2. Remove.
 - **`Vary: *`.** Kills all CDN caching. Be surgical: `Accept-Language,
 Cookie` only if both strategies are active.
 
