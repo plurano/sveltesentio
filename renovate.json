@@ -64,6 +64,12 @@
 			"groupName": "test tooling"
 		},
 		{
+			"description": "mcr.microsoft.com publishes no release timestamp Renovate reads (its docker datasource dates tags only on Docker Hub), so the 3-day minimumReleaseAge would withhold every tag; scripts/check-playwright-image.mjs refuses an image tag that differs from the lockfile playwright version, and npm playwright keeps its 3-day wait, so the image cannot land before its npm twin has aged.",
+			"matchDatasources": ["docker"],
+			"matchDepNames": ["mcr.microsoft.com/playwright"],
+			"minimumReleaseAgeBehaviour": "timestamp-optional"
+		},
+		{
 			"matchPackageNames": ["@tanstack/**"],
 			"groupName": "tanstack monorepo"
 		},
