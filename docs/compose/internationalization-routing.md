@@ -22,7 +22,7 @@ redirect**, **cookie persists user's explicit choice across sessions**,
 
 ## Related
 
-- [i18n-runtime-strategy.md](i18n-runtime-strategy.md) — Paraglide v2
+- [i18n-runtime-strategy.md](i18n-runtime-strategy.md) — Paraglide 3
   message resolution; sibling to this recipe (routing vs runtime).
 - [theming.md](theming.md) + [theming-flash-free.md](theming-flash-free.md)
   — cookie-resolution pattern mirrors this recipe's `__Host-locale`.

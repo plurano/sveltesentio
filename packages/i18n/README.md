@@ -1,6 +1,6 @@
 # @sveltesentio/i18n
 
-> Paraglide JS v2 integration — locale routing, RTL support, message utilities
+> Paraglide JS integration — locale routing, RTL support, message utilities
 
 Part of the [sveltesentio](https://github.com/golusoris/sveltesentio) composable SvelteKit framework.
 
