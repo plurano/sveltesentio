@@ -12,19 +12,37 @@ import { toastPreset } from '../src/toast/index.js';
  */
 const MOUNTED_10FOOT_MIN_WIDTH = 'min(40rem, 100% - 3rem)';
 
-/** Poll boundedly (<= 20 ticks, 10 ms each) for a mounted toast matching `selector`. */
+/** Find the first mounted toast matching `selector` (and `title`, when given). */
+function findToast(
+	container: HTMLElement,
+	selector: string,
+	title: string | undefined,
+): HTMLElement | null {
+	for (const el of container.querySelectorAll<HTMLElement>(selector)) {
+		if (title === undefined) return el;
+		const text = el.querySelector('[data-title]')?.textContent?.trim();
+		if (el.matches('[data-sonner-toast]') && text === title) return el;
+	}
+	return null;
+}
+
+/**
+ * Poll boundedly (<= 20 ticks, 10 ms each) for a mounted toast matching
+ * `selector` (and `title`, when given).
+ */
 async function waitForToast(
 	container: HTMLElement,
 	selector = '[data-sonner-toast]',
+	title?: string,
 ): Promise<HTMLElement | null> {
 	for (let tick = 0; tick < 20; tick += 1) {
-		const el = container.querySelector<HTMLElement>(selector);
+		const el = findToast(container, selector, title);
 		if (el !== null) return el;
 		await new Promise<void>((resolve) => {
 			setTimeout(resolve, 10);
 		});
 	}
-	return container.querySelector<HTMLElement>(selector);
+	return findToast(container, selector, title);
 }
 
 interface MountedToast {
@@ -32,18 +50,18 @@ interface MountedToast {
 	readonly li: HTMLElement;
 }
 
-/** Issues the Undo probe toast and resolves its id and mounted element. */
-async function mountActionToast(container: HTMLElement): Promise<MountedToast> {
-	const id = toast('probe', {
+/** Issues an Undo probe toast with `title` and resolves its id and mounted element. */
+async function mountActionToast(container: HTMLElement, title: string): Promise<MountedToast> {
+	const id = toast(title, {
 		action: {
 			label: 'Undo',
 			onClick: () => undefined,
 		},
 	});
-	const li = await waitForToast(container);
+	const li = await waitForToast(container, '[data-sonner-toast]', title);
 	expect(li).not.toBeNull();
 	if (li === null) {
-		throw new Error('expected [data-sonner-toast] to mount');
+		throw new Error(`expected [data-sonner-toast] "${title}" to mount`);
 	}
 	return { id, li };
 }
@@ -70,7 +88,7 @@ describe('<Toaster {...toastPreset().toaster}>', () => {
 	it('applies 10foot width, padding, font-size, toaster min-width, gap, offset and button target floor on a mounted toast', async () => {
 		const p = toastPreset('10foot');
 		const { container, unmount } = render(Toaster, { ...p.toaster });
-		const { id, li } = await mountActionToast(container);
+		const { id, li } = await mountActionToast(container, 'probe 10foot preset');
 
 		const liStyle = li.getAttribute('style') ?? '';
 		expect(liStyle).toContain('--width: min(40rem, 100%)');
@@ -107,7 +125,7 @@ describe('<Toaster {...toastPreset().toaster}>', () => {
 				style: p.style as unknown as string,
 			},
 		});
-		const { id, li } = await mountActionToast(container);
+		const { id, li } = await mountActionToast(container, 'probe object style map');
 
 		expect(li.getAttribute('style') ?? '').not.toContain('40rem');
 
