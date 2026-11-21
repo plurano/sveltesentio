@@ -4,6 +4,7 @@
 - **Date**: 2026-11-21
 - **Deciders**: @lusoris (user, through the fleet decision ledger entry `sveltesentio-paraglide-3-major`)
 - **Supersedes**: [ADR-0017](0017-paraglide-v2-i18n-default.md)
+- **Amends**: [ADR-0018](0018-i18n-thin-wrapper.md), replacing only its `@inlang/paraglide-js@^2` version clause; its thin-wrapper decision and a11y action items stay
 
 ## Context
 
@@ -12,14 +13,14 @@
 Upstream `@inlang/paraglide-js` (`github.com/generaltranslation/paraglide-js`, MIT, documentation at <https://paraglidejs.com>) published `3.0.0` on 2026-11-03 and `3.2.2` on 2026-11-10, following `2.25.1` on 2026-09-08 (measured 2026-11-21). Upstream `CHANGELOG.md` for `3.0.0` records three breaking changes:
 
 - Commit `f65ba59` removes the `additionalFiles` compiler option (configurations passing it fail with migration guidance); the CLI now emits TypeScript declarations by default, while the programmatic compiler and the non-Vite bundler plugins keep `emitTsDeclarations: false` as their default.
-- Commit `05a3e17` removes `experimentalMiddlewareLocaleSplitting` (the runtime no longer exports `trackMessageCall`), replaced by `experimentalPerLocaleBuild: true` for Vite applications.
+- Commit `05a3e17` removes `experimentalMiddlewareLocaleSplitting` (the runtime no longer exports `trackMessageCall`), replaced by `experimentalPerLocaleBuild: true` for Vite applications. The `3.2.2` option documentation (`dist/bundler-plugins/vite.d.ts`) limits that option to Vite 8 or newer, builds one client environment per locale, requires full-document navigation on a locale change, and states that framework SSR graph selection requires a public framework integration API, so it is not a drop-in replacement in a SvelteKit application.
 - Commit `eb5dc1d` adds `outputStructure: "virtual-modules"` as the default for the Vite integration in development and production: public runtime and message entry points remain on disk while message implementations are served virtually through the Vite plugin (`"virtual-modules"` rejects `emitTsDeclarations: false` and any `messageModuleSize` other than `1`, whereas CLI and non-Vite bundler defaults stay unchanged). Standalone Node scripts or grouped-output builds must select `"message-modules"` or `"locale-modules"`. In `3.2.2` the Vite plugin turns declarations on by default for `"virtual-modules"` and refuses an explicit `emitTsDeclarations: false` (`dist/bundler-plugins/virtual-messages.js`), although the `3.0.0` changelog entry of `f65ba59` describes the bundler plugin default as `false`.
 
 In `@inlang/paraglide-js@3.2.2` (`dist/bundler-plugins/vite.js`), `paraglideVitePlugin()` without `experimentalPerLocaleBuild` returns `createVirtualMessagesPlugins(...)` (`[paraglide-virtual-messages, unplugin-paraglide-js, optimize]`), whereas v2 returned the compiler plugin alone. Before this change (`main` at `e52de45`), no file under `packages/`, `apps/` or `docs/` set or used `additionalFiles`, `experimentalMiddlewareLocaleSplitting`, `trackMessageCall`, `outputStructure`, `messageModuleSize` or `emitTsDeclarations`. The public surface of `@sveltesentio/i18n` (`packages/i18n/src/index.ts`) re-exports `paraglideVitePlugin` unchanged, and the SvelteKit integration pattern of [ADR-0017](0017-paraglide-v2-i18n-default.md) is unchanged in Paraglide 3.
 
 ## Decision
 
-1. Move the workspace `devDependencies` range for `@inlang/paraglide-js` in `packages/i18n/package.json` to `^3` (via Renovate pull request 604) so default CI builds and unit tests run against Paraglide 3.
+1. Move the workspace `devDependencies` range for `@inlang/paraglide-js` in `packages/i18n/package.json` to `^3` (via Renovate pull request 604) so default CI builds and unit tests run against Paraglide 3. This record lands before pull request 604; until 604 merges, `packages/i18n/package.json` still declares `^2.25.1` and `pnpm-lock.yaml` resolves `2.29.3`.
 2. Keep `peerDependencies["@inlang/paraglide-js"]` at `>=2.0.0` in `packages/i18n/package.json`, keeping the consumer package surface (`packages/i18n/src/index.ts` and subpath exports) unchanged.
 3. Retain all architectural commitments of [ADR-0017](0017-paraglide-v2-i18n-default.md) except the v2 version lock: no separate `@inlang/paraglide-sveltekit` adapter, direct `paraglideVitePlugin()` wiring in `vite.config.ts`, `paraglideMiddleware()` in `hooks.server.ts`, `reroute()` in `hooks.ts`, and `<html lang="%lang%" dir="%dir%">` placeholders in `app.html`.
 4. Update package and compose documentation (`packages/i18n/AGENTS.md`, `packages/i18n/README.md`, `docs/compose/i18n-runtime-strategy.md`, and `docs/compose/internationalization-routing.md`) to reflect Paraglide 3 Vite defaults.

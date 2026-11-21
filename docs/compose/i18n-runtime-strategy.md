@@ -333,8 +333,12 @@ arca is the reference integration (see
   now emits TypeScript declarations by default; the programmatic
   compiler keeps `emitTsDeclarations: false`.
 - Paraglide 3 removes `experimentalMiddlewareLocaleSplitting` and the
-  runtime `trackMessageCall` export; Vite applications opt into
-  per-locale builds with `experimentalPerLocaleBuild: true` instead.
+  runtime `trackMessageCall` export. The experimental
+  `experimentalPerLocaleBuild: true` option (Vite 8 or newer) builds one
+  client environment per locale and needs full-document navigation on a
+  locale change; upstream states that framework SSR graph selection
+  requires a public framework integration API. It is therefore not a
+  drop-in replacement for the removed option in a SvelteKit application.
 - The Vite integration defaults to
   `outputStructure: 'virtual-modules'` in development and production —
   keeping public runtime and message entry points on disk while

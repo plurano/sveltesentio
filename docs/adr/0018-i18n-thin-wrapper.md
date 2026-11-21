@@ -1,6 +1,6 @@
 # ADR-0018: Keep thin `@sveltesentio/i18n` wrapper (Paraglide v2 re-export + a11y action items)
 
-- **Status**: Accepted
+- **Status**: Accepted; amended by [ADR-0059](0059-paraglide-3-i18n-default.md), which replaces the `@inlang/paraglide-js@^2` version clause
 - **Date**: 2026-04-17
 - **Deciders**: @lusoris (user), research agent
 - **D-row**: D172 in `.workingdir/research/decisions-needed.md`
