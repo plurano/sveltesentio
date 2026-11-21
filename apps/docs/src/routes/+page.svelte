@@ -24,9 +24,9 @@
 		<code>@sveltesentio/*</code> packages, Svelte 5 runes-first, OWASP ASVS L2 + WCAG 2.2 AA by default.
 	</p>
 	<div class="hero-actions">
-		<a class="btn btn-primary" href={resolve('/docs/[...slug]', { slug: 'principles' })}
-			>Read the §2 contract</a
-		>
+		<a class="btn btn-primary" href={resolve('/docs/[...slug]', { slug: 'principles' })}>
+			Read the §2 contract
+		</a>
 		<a class="btn" href={resolve('/docs/[...slug]', { slug: 'adr/README' })}>Browse ADRs</a>
 		<a class="btn" href={storybookPath} rel="external">Component showcase ↗</a>
 	</div>

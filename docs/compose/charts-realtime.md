@@ -81,11 +81,11 @@ is small and app-owned; no `uplot-svelte` third-party (stale, pre-runes).
   <!-- Off-screen table fallback for SR users -->
   <table class="sr-only">
     <caption>{title} data</caption>
-    <thead
-      ><tr
-        ><th>Time</th>{#each options.series.slice(1) as s}<th>{s.label}</th>{/each}</tr
-      ></thead
-    >
+    <thead>
+      <tr>
+        <th>Time</th>{#each options.series.slice(1) as s}<th>{s.label}</th>{/each}
+      </tr>
+    </thead>
     <tbody>
       {#each data[0] as t, i}
         <tr>
