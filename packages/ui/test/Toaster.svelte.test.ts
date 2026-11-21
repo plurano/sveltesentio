@@ -27,6 +27,27 @@ async function waitForToast(
 	return container.querySelector<HTMLElement>(selector);
 }
 
+interface MountedToast {
+	readonly id: ReturnType<typeof toast>;
+	readonly li: HTMLElement;
+}
+
+/** Issues the Undo probe toast and resolves its id and mounted element. */
+async function mountActionToast(container: HTMLElement): Promise<MountedToast> {
+	const id = toast('probe', {
+		action: {
+			label: 'Undo',
+			onClick: () => undefined,
+		},
+	});
+	const li = await waitForToast(container);
+	expect(li).not.toBeNull();
+	if (li === null) {
+		throw new Error('expected [data-sonner-toast] to mount');
+	}
+	return { id, li };
+}
+
 describe('<Toaster {...toastPreset().toaster}>', () => {
 	beforeEach(() => {
 		vi.stubGlobal('matchMedia', (query: string): MediaQueryList => ({
@@ -49,16 +70,9 @@ describe('<Toaster {...toastPreset().toaster}>', () => {
 	it('applies 10foot width, padding, font-size, toaster min-width, gap, offset and button target floor on a mounted toast', async () => {
 		const p = toastPreset('10foot');
 		const { container, unmount } = render(Toaster, { ...p.toaster });
-		const id = toast('probe', {
-			action: {
-				label: 'Undo',
-				onClick: () => undefined,
-			},
-		});
+		const { id, li } = await mountActionToast(container);
 
-		const li = await waitForToast(container);
-		expect(li).not.toBeNull();
-		const liStyle = li?.getAttribute('style') ?? '';
+		const liStyle = li.getAttribute('style') ?? '';
 		expect(liStyle).toContain('--width: min(40rem, 100%)');
 		expect(liStyle).toContain('padding: 1.125rem 1.5rem');
 		expect(liStyle).toContain('font-size: 20px');
@@ -93,16 +107,9 @@ describe('<Toaster {...toastPreset().toaster}>', () => {
 				style: p.style as unknown as string,
 			},
 		});
-		const id = toast('probe', {
-			action: {
-				label: 'Undo',
-				onClick: () => undefined,
-			},
-		});
+		const { id, li } = await mountActionToast(container);
 
-		const li = await waitForToast(container);
-		expect(li).not.toBeNull();
-		expect(li?.getAttribute('style') ?? '').not.toContain('40rem');
+		expect(li.getAttribute('style') ?? '').not.toContain('40rem');
 
 		toast.dismiss(id);
 		unmount();
