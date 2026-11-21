@@ -8,7 +8,6 @@ import {
 	type ConnectFn,
 	type IpcClient,
 	type IpcClientOptions,
-	type SocketLike,
 } from '../src/client.js';
 import {
 	CGROUP_V2_MARKER,
@@ -19,13 +18,12 @@ import {
 	type SockmapProbe,
 } from '../src/sockmap.js';
 import { detectTransport, encodeFrame, type AccessFn } from '../src/transport.js';
+import { FakeSocket } from './fake-socket.js';
 
 const SOCK = '/run/golusoris/api.sock';
 const MAP = '/sys/fs/bpf/golusoris/sockhash';
 const LINUX_RELEASE = '6.8.0-1015-azure';
 const EXPECTED_KERNEL: KernelVersion = { major: 6, minor: 8 };
-
-type Handler = (...args: never[]) => void;
 
 interface MutablePaths {
 	readonly access: AccessFn;
@@ -43,57 +41,6 @@ interface ClientHarness {
 	readonly paths: MutablePaths;
 	readonly connectCalls: { path: string }[];
 	readonly open: () => Promise<ConnectedPeer>;
-}
-
-/**
- * Test double for `node:net.Socket` driven through {@link SocketLike}.
- *
- * Emits `connect` on a microtask once a listener attaches so client handshake
- * completes without a real socket or timer.
- */
-class FakeSocket implements SocketLike {
-	readonly written: Uint8Array[] = [];
-	ended = false;
-	destroyed = false;
-	autoConnect = true;
-	private readonly handlers = new Map<string, Set<Handler>>();
-
-	on(event: 'connect', handler: () => void): this;
-	on(event: 'data', handler: (chunk: Uint8Array) => void): this;
-	on(event: 'error', handler: (error: Error) => void): this;
-	on(event: 'close', handler: () => void): this;
-	on(event: string, handler: Handler): this {
-		let listeners = this.handlers.get(event);
-		if (listeners === undefined) {
-			listeners = new Set();
-			this.handlers.set(event, listeners);
-		}
-		listeners.add(handler);
-		if (event === 'connect' && this.autoConnect) {
-			this.autoConnect = false;
-			queueMicrotask(() => this.emit('connect'));
-		}
-		return this;
-	}
-
-	write(data: Uint8Array): boolean {
-		this.written.push(data);
-		return true;
-	}
-
-	end(): void {
-		this.ended = true;
-	}
-
-	destroy(): void {
-		this.destroyed = true;
-	}
-
-	emit(event: string, ...args: unknown[]): void {
-		for (const handler of this.handlers.get(event) ?? []) {
-			(handler as (...a: unknown[]) => void)(...args);
-		}
-	}
 }
 
 /**

@@ -1,56 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ProblemError } from '@sveltesentio/core';
-import { createIpcClient, type SocketLike } from '../src/client.js';
+import { createIpcClient } from '../src/client.js';
 import { encodeFrame, type AccessFn } from '../src/transport.js';
-
-type Handler = (...args: never[]) => void;
-
-/**
- * Test double for `node:net.Socket` driven through {@link SocketLike}.
- *
- * Fires `connect` on its own microtask once a listener attaches (mirrors the
- * real socket's async connect), so tests need not count microtask hops.
- */
-class FakeSocket implements SocketLike {
-	readonly written: Uint8Array[] = [];
-	ended = false;
-	destroyed = false;
-	autoConnect = true;
-	private readonly handlers = new Map<string, Set<Handler>>();
-
-	on(event: 'connect', handler: () => void): this;
-	on(event: 'data', handler: (chunk: Uint8Array) => void): this;
-	on(event: 'error', handler: (error: Error) => void): this;
-	on(event: 'close', handler: () => void): this;
-	on(event: string, handler: Handler): this {
-		if (!this.handlers.has(event)) this.handlers.set(event, new Set());
-		this.handlers.get(event)!.add(handler);
-		if (event === 'connect' && this.autoConnect) {
-			this.autoConnect = false;
-			queueMicrotask(() => this.emit('connect'));
-		}
-		return this;
-	}
-
-	write(data: Uint8Array): boolean {
-		this.written.push(data);
-		return true;
-	}
-
-	end(): void {
-		this.ended = true;
-	}
-
-	destroy(): void {
-		this.destroyed = true;
-	}
-
-	emit(event: string, ...args: unknown[]): void {
-		for (const handler of this.handlers.get(event) ?? []) {
-			(handler as (...a: unknown[]) => void)(...args);
-		}
-	}
-}
+import { FakeSocket } from './fake-socket.js';
 
 const reachable =
 	(paths: readonly string[]): AccessFn =>
