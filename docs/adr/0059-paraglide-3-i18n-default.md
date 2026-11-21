@@ -34,7 +34,7 @@ In `@inlang/paraglide-js@3.2.2` (`dist/bundler-plugins/vite.js`), `paraglideVite
 
 **Positive**:
 
-- Default CI tests `@sveltesentio/i18n` against the current upstream major (`^3`), while downstream consumers on Paraglide 2 or Paraglide 3 satisfy `peerDependencies` (`>=2.0.0`) without a breaking framework release.
+- Once pull request 604 merges, default CI tests `@sveltesentio/i18n` against the current upstream major (`^3`), while downstream consumers on Paraglide 2 or Paraglide 3 satisfy `peerDependencies` (`>=2.0.0`) without a breaking framework release.
 - Vite consumers on Paraglide 3 get `outputStructure: "virtual-modules"` by default in development and production without writing per-message implementation files to disk.
 
 **Negative / trade-offs**:
@@ -42,7 +42,7 @@ In `@inlang/paraglide-js@3.2.2` (`dist/bundler-plugins/vite.js`), `paraglideVite
 - Standalone Node scripts or non-Vite tools importing generated messages directly from disk on Paraglide 3 require an explicit physical `outputStructure` (`"message-modules"` or `"locale-modules"`), because virtual modules require the Vite plugin.
 - Consumers on Paraglide 2 stay inside the `>=2.0.0` peer range, but no CI job installs Paraglide 2 once pull request 604 lands. The peer-floors job (`.github/workflows/peer-floors.yml`) pins only the peers in `FLOORED_PEERS` of `scripts/pin-peer-floors.mjs` (`svelte`, `@sveltejs/kit`, `vite`, `typescript`, `layerchart`), so the `2.0.0` floor was not tested before this change either.
 
-**Revisit trigger**: A Paraglide 4 major, or a reported break for a consumer on Paraglide 2, which no CI job tests (see above).
+**Revisit trigger**: A Paraglide 4 major, or a reported break for a consumer on Paraglide 2, which no CI job tests once pull request 604 merges (see above).
 
 ## Evidence
 
