@@ -1,38 +1,13 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import type {
 	AwarenessChange,
 	AwarenessEvent,
 	AwarenessLike,
 	PresenceState,
 } from '../src/awareness.js';
+import { useRuneShim } from './rune-shim.js';
 
-/**
- * Non-reactive `$state` / `$effect` shim — see createYjsStore.test.ts for the
- * rationale. The presence store's getters close over `let others/local =
- * $state(...)` bindings, so reassignment inside the awareness `'change'`
- * callback is what the getters surface (ADR-0039). Local mutations must route
- * through the awareness, never the proxy.
- */
-const teardowns: Array<() => void> = [];
-const g = globalThis as unknown as {
-	$state?: unknown;
-	$effect?: unknown;
-};
-
-beforeEach(() => {
-	g.$state = <T>(initial: T): T => initial;
-	const effect = (fn: () => void | (() => void)): void => {
-		const cleanup = fn();
-		if (typeof cleanup === 'function') teardowns.push(cleanup);
-	};
-	g.$effect = effect;
-});
-
-afterEach(() => {
-	teardowns.length = 0;
-	delete g.$state;
-	delete g.$effect;
-});
+const shim = useRuneShim();
 
 type Listener = (change: AwarenessChange, origin: unknown) => void;
 
@@ -228,8 +203,7 @@ describe('createPresenceStore', () => {
 		const store = createPresenceStore(aw);
 		expect(aw.listenerCount('change')).toBe(1);
 
-		expect(teardowns).toHaveLength(1);
-		teardowns[0]!();
+		shim.teardown();
 		expect(aw.listenerCount('change')).toBe(0);
 
 		// After teardown no further change is observed.
