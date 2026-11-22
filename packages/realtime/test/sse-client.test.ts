@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SseClient, type EventSourceLike, type SseClientState } from '../src/sse-client.js';
+import { receiverChecked } from './receiver-checked.js';
 
 type Listener = (event: unknown) => void;
 
@@ -36,16 +37,6 @@ class FakeEventSource implements EventSourceLike {
 	emit(type: string, payload?: unknown): void {
 		for (const handler of this.listeners.get(type) ?? []) handler(payload);
 	}
-}
-
-function receiverChecked<T extends (...args: never[]) => unknown>(impl: T): T {
-	// Cast preserves overloaded timer signatures (such as Node's setTimeout.__promisify__) as T.
-	return function (this: unknown, ...args: never[]): unknown {
-		if (this !== undefined && this !== globalThis) {
-			throw new TypeError('Illegal invocation');
-		}
-		return impl(...args);
-	} as unknown as T;
 }
 
 beforeEach(() => {
@@ -345,5 +336,25 @@ describe('SseClient', () => {
 		expect(FakeEventSource.instances.length).toBe(1);
 		expect(client.currentState).toBe('closed');
 		expect(vi.getTimerCount()).toBe(0);
+	});
+
+	it('close() from onError leaves no retry armed', () => {
+		const client: SseClient = new SseClient({
+			url: '/stream',
+			backoff: { minMs: 500, maxMs: 10_000, jitter: 0, random: () => 0.5 },
+			eventSourceFactory: (url, init) => new FakeEventSource(url, init),
+			onError: () => {
+				client.close();
+			},
+		});
+		client.start();
+		FakeEventSource.instances[0]!.emit('open');
+		FakeEventSource.instances[0]!.emit('error', new Error('drop'));
+
+		expect(client.currentState).toBe('closed');
+		expect(vi.getTimerCount()).toBe(0);
+		vi.advanceTimersByTime(60_000);
+		expect(FakeEventSource.instances.length).toBe(1);
+		expect(client.currentState).toBe('closed');
 	});
 });

@@ -123,8 +123,10 @@ export class SseClient {
 		this.options.onMessage?.(payload);
 	}
 
+	/** Stops when `onError` called `close()`, which already tore the source down. */
 	private handleError = (error: unknown): void => {
 		this.options.onError?.(error, this.reconnect.attempt);
+		if (this.state === 'closed') return;
 		this.teardownSource();
 		this.scheduleReconnect();
 	};

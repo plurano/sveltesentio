@@ -1,15 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createReconnectScheduler } from '../src/reconnect-scheduler.js';
-
-function receiverChecked<T extends (...args: never[]) => unknown>(impl: T): T {
-	// Cast preserves overloaded timer signatures (such as Node's setTimeout.__promisify__) as T.
-	return function (this: unknown, ...args: never[]): unknown {
-		if (this !== undefined && this !== globalThis) {
-			throw new TypeError('Illegal invocation');
-		}
-		return impl(...args);
-	} as unknown as T;
-}
+import { receiverChecked } from './receiver-checked.js';
 
 beforeEach(() => {
 	vi.useFakeTimers();
