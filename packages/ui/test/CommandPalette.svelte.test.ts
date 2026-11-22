@@ -2,12 +2,14 @@
 // listbox-in-dialog pattern, keyboard navigation, and type-to-filter (ADR-0025).
 // The component is a thin view over the pure `CommandRegistry`; here we mount it
 // open with a real registry and drive it through the DOM.
-import { fireEvent, render, within } from '@testing-library/svelte';
+import { fireEvent, render, waitFor, within } from '@testing-library/svelte';
+import { tick } from 'svelte';
 import { describe, expect, it, vi } from 'vitest';
 import { requireAt } from '@sveltesentio/testing';
 import CommandPalette from '../src/cmd/CommandPalette.svelte';
 import { CommandRegistry, type Command } from '../src/cmd/registry.js';
 import { expectNoAxeViolations } from './axe-helper.js';
+import { flushQueuedDialogClose } from './dialog-stub.js';
 
 function makeRegistry(extra: Partial<Record<string, () => void>> = {}): {
 	registry: CommandRegistry;
@@ -183,5 +185,82 @@ describe('<CommandPalette>', () => {
 		const { container } = renderOpen();
 		const dialog = within(container).getByRole('dialog');
 		await expectNoAxeViolations(dialog);
+	});
+
+	it('renders a native DIALOG element with the open attribute while open', () => {
+		const { container } = renderOpen();
+		const native = container.querySelector('dialog');
+		expect(native).not.toBeNull();
+		expect(native?.tagName).toBe('DIALOG');
+		expect(native).toHaveAttribute('open');
+	});
+
+	it('returns focus to the element focused before open after Escape', async () => {
+		const { registry } = makeRegistry();
+		const opener = document.createElement('button');
+		opener.type = 'button';
+		document.body.append(opener);
+		opener.focus();
+
+		const { getByRole, queryByRole, rerender } = render(CommandPalette, {
+			registry,
+			open: false,
+		});
+		await rerender({ open: true });
+		await waitFor(() => expect(getByRole('combobox')).toHaveFocus());
+
+		await fireEvent.keyDown(window, { key: 'Escape' });
+		await waitFor(() => expect(queryByRole('dialog')).toBeNull());
+		expect(opener).toHaveFocus();
+		opener.remove();
+	});
+
+	it('returns focus to the element focused before open after Enter runs a command', async () => {
+		const { registry } = makeRegistry();
+		const opener = document.createElement('button');
+		opener.type = 'button';
+		document.body.append(opener);
+		opener.focus();
+
+		const { getByRole, queryByRole, rerender } = render(CommandPalette, {
+			registry,
+			open: false,
+		});
+		await rerender({ open: true });
+		const input = getByRole('combobox');
+		await waitFor(() => expect(input).toHaveFocus());
+
+		await fireEvent.keyDown(input, { key: 'Enter' });
+		await waitFor(() => expect(queryByRole('dialog')).toBeNull());
+		expect(opener).toHaveFocus();
+		opener.remove();
+	});
+
+	it('closes on a cancel event on the native dialog (negative)', async () => {
+		const { getByRole, queryByRole } = renderOpen();
+		const dialog = getByRole('dialog', { name: 'Command palette' });
+		dialog.dispatchEvent(new Event('cancel', { bubbles: false, cancelable: true }));
+		await waitFor(() => expect(queryByRole('dialog')).toBeNull());
+	});
+
+	it('leaves a single dialog node after toggling open twice quickly (boundary)', async () => {
+		const { registry } = makeRegistry();
+		const { rerender, container } = render(CommandPalette, { registry, open: true });
+		await rerender({ open: false });
+		await rerender({ open: true });
+		await waitFor(() => expect(container.querySelectorAll('dialog')).toHaveLength(1));
+	});
+
+	it('keeps the reopened palette open when the unmounted dialog fires its queued close (boundary)', async () => {
+		const { registry } = makeRegistry();
+		const { rerender, container } = render(CommandPalette, { registry, open: true });
+		await rerender({ open: false });
+		await rerender({ open: true });
+		const replacement = container.querySelector('dialog');
+		expect(replacement).toHaveAttribute('open');
+		await flushQueuedDialogClose();
+		await tick();
+		expect(container.querySelector('dialog')).toBe(replacement);
+		expect(replacement).toHaveAttribute('open');
 	});
 });

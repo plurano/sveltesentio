@@ -5,6 +5,10 @@ CommandPalette — a thin command palette over the pure `CommandRegistry`
 list, `aria-activedescendant` tracks the highlighted option) so it is keyboard-
 and screen-reader-accessible out of the box.
 
+Opened via the native `<dialog>` top layer (`showModal()`), above sticky/fixed
+page content and outside transformed ancestors. Focus returns to the prior
+active element when the palette closes.
+
 By repo policy the shadcn-svelte `Command` primitive (backed by `bits-ui`) is
 CLI-delivered into the consuming app (ADR-0014/0025); to use it, swap this
 markup for `<Command.Root>` etc. and keep driving it from this same registry.
@@ -40,6 +44,8 @@ Plain `tsc` does not type-check `.svelte`; the typed, tested logic lives in
 
 	let query = $state('');
 	let activeIndex = $state(0);
+	let modalDialog = $state<HTMLDialogElement | null>(null);
+	let returnFocus: HTMLElement | undefined;
 
 	const results = $derived(registry.search(query));
 	const listId = $derived(`${idBase}-list`);
@@ -66,6 +72,7 @@ Plain `tsc` does not type-check `.svelte`; the typed, tested logic lives in
 			event.preventDefault();
 			open = !open;
 		} else if (event.key === 'Escape' && open) {
+			event.preventDefault();
 			open = false;
 		}
 	}
@@ -83,6 +90,18 @@ Plain `tsc` does not type-check `.svelte`; the typed, tested logic lives in
 		}
 	}
 
+	function onDialogCancel(event: Event): void {
+		event.preventDefault();
+		open = false;
+	}
+
+	// Browsers fire `close` as a queued task, so a dialog unmounted by a quick
+	// close + reopen still fires it after the new one mounted; only the mounted
+	// node may close the palette.
+	function onDialogClose(event: Event): void {
+		if (event.currentTarget === modalDialog) open = false;
+	}
+
 	$effect(() => {
 		void query;
 		activeIndex = 0;
@@ -93,6 +112,26 @@ Plain `tsc` does not type-check `.svelte`; the typed, tested logic lives in
 		clampActive();
 	});
 
+	// On open: remember the prior focus, lift the dialog into the top layer and
+	// move focus to the search input (the dialog focusing steps may pick another
+	// element). On close: leave the top layer before the node unmounts, then
+	// restore the prior focus.
+	$effect(() => {
+		const node = modalDialog;
+		if (!open || !node) return;
+		returnFocus =
+			document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
+		if (!node.open) node.showModal();
+		queueMicrotask(() => {
+			node.querySelector<HTMLInputElement>('input')?.focus();
+		});
+		return () => {
+			if (node.open) node.close();
+			returnFocus?.focus();
+			returnFocus = undefined;
+		};
+	});
+
 	function labelFor(command: Command): string {
 		return command.subtitle ? `${command.title} — ${command.subtitle}` : command.title;
 	}
@@ -101,7 +140,14 @@ Plain `tsc` does not type-check `.svelte`; the typed, tested logic lives in
 <svelte:window onkeydown={onWindowKeydown} />
 
 {#if open}
-	<div class="ssentio-cmd__backdrop">
+	<dialog
+		bind:this={modalDialog}
+		class="ssentio-cmd__dialog"
+		aria-label="Command palette"
+		aria-modal="true"
+		oncancel={onDialogCancel}
+		onclose={onDialogClose}
+	>
 		<!-- Dismiss overlay: a real <button> so it is click- AND keyboard-operable;
          Escape is also handled at the window level. -->
 		<button
@@ -111,13 +157,7 @@ Plain `tsc` does not type-check `.svelte`; the typed, tested logic lives in
 			tabindex="-1"
 			onclick={() => (open = false)}
 		></button>
-		<div
-			class="ssentio-cmd__panel"
-			role="dialog"
-			aria-modal="true"
-			aria-label="Command palette"
-			tabindex="-1"
-		>
+		<div class="ssentio-cmd__panel" tabindex="-1">
 			<!-- svelte-ignore a11y_autofocus -->
 			<input
 				id={inputId}
@@ -161,17 +201,34 @@ Plain `tsc` does not type-check `.svelte`; the typed, tested logic lives in
 				{/if}
 			</ul>
 		</div>
-	</div>
+	</dialog>
 {/if}
 
 <style>
-	.ssentio-cmd__backdrop {
+	.ssentio-cmd__dialog {
 		position: fixed;
 		inset: 0;
+		inline-size: 100%;
+		block-size: 100%;
+		max-inline-size: none;
+		max-block-size: none;
+		margin: 0;
+		padding: 0;
+		border: 0;
+		background: transparent;
+		color: inherit;
+		overflow: visible;
+	}
+
+	.ssentio-cmd__dialog[open] {
 		display: flex;
 		justify-content: center;
 		align-items: flex-start;
 		padding-block-start: 12vh;
+	}
+
+	.ssentio-cmd__dialog::backdrop {
+		background: transparent;
 	}
 
 	.ssentio-cmd__dismiss {

@@ -36,6 +36,8 @@ Each wrapper splits **pure, unit-tested logic** (`.ts`) from **thin component** 
 | `./data`   | `computeRows` (filter→sort→paginate), `toggleSort`/`setFilter`/`setPageSize`/`setPageIndex` reducers, `computeVirtualWindow` (visible-window math), `nextFocusIndex` (roving keys)                     | `DataTable.svelte`, `VirtualList.svelte` — `role=grid`/`row`/`gridcell`, `aria-rowcount`/`aria-colcount`, 1-based `aria-rowindex` (ADR-0011/0024) | `@tanstack/svelte-virtual` |
 | `./cmd`    | `CommandRegistry` (immutable register/unregister), `scoreCommand`/`searchCommands` (exact>prefix>substring>keyword>fuzzy ranking), `parseBinding`/`matchesShortcut`/`resolveKeymap` (`$mod`→Meta/Ctrl) | `CommandPalette.svelte` — combobox/listbox + `aria-activedescendant` (ADR-0025)                                                                   | `bits-ui`, `tinykeys`      |
 
+Overlays (#668): `CommandPalette.svelte` + `dialog/Dialog.svelte` render in native `<dialog>` via `showModal()` = top layer; beat sticky, any `z-index`, transformed/clipping ancestors. Never back to inline `position: fixed` + `z-index`. Proof: `Over page content` stories, hit-test helpers `test/top-layer-probe.ts` (real browsers only; jsdom stub `test/dialog-stub.ts`).
+
 ARIA contract (ADR-0024): `aria-rowcount`/`aria-colcount` reflect **full** filtered dataset, not rendered page; `aria-rowindex` 1-based + stable across scroll. shadcn-svelte `Command` primitive = CLI-delivered escape hatch — `CommandPalette.svelte` = standalone default driven by same registry.
 
 ## Invariants
