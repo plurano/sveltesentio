@@ -23,6 +23,11 @@ export interface CartesianChartBaseProps<TDatum> {
 	showDataTable?: boolean | undefined;
 	/** Stable id prefix for aria wiring; auto-derived from the title if omitted. */
 	idBase?: string | undefined;
+	/**
+	 * CSS block size of the plot region. Semantic wrappers default via
+	 * `DEFAULT_CHART_HEIGHT` from `@sveltesentio/charts/preset`.
+	 */
+	height?: string | undefined;
 }
 
 /**

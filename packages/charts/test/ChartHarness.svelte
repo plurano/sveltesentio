@@ -18,6 +18,7 @@ LayerChart's render output.
 		tableOptions,
 		showDataTable,
 		idBase,
+		height,
 	}: ChartHarnessProps = $props();
 </script>
 
@@ -28,7 +29,16 @@ LayerChart's render output.
 		{/snippet}
 	</Chart>
 {:else}
-	<ChartFigure {title} {description} {series} {accessors} {tableOptions} {showDataTable} {idBase}>
+	<ChartFigure
+		{title}
+		{description}
+		{series}
+		{accessors}
+		{tableOptions}
+		{showDataTable}
+		{idBase}
+		{height}
+	>
 		{#snippet chart()}
 			<div data-testid="viz-content">rendered visual</div>
 		{/snippet}

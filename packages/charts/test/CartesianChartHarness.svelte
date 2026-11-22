@@ -22,6 +22,7 @@ contract (they share the <ChartFigure> envelope).
 		tableOptions?: BuildTableOptions<Point> | undefined;
 		showDataTable?: boolean | undefined;
 		idBase?: string | undefined;
+		height?: string | undefined;
 	}
 
 	const {
@@ -33,15 +34,43 @@ contract (they share the <ChartFigure> envelope).
 		tableOptions,
 		showDataTable,
 		idBase,
+		height,
 	}: Props = $props();
 </script>
 
 {#if kind === 'line'}
-	<LineChart {title} {description} {series} {accessors} {tableOptions} {showDataTable} {idBase} />
+	<LineChart
+		{title}
+		{description}
+		{series}
+		{accessors}
+		{tableOptions}
+		{showDataTable}
+		{idBase}
+		{height}
+	/>
 {:else if kind === 'area'}
-	<AreaChart {title} {description} {series} {accessors} {tableOptions} {showDataTable} {idBase} />
+	<AreaChart
+		{title}
+		{description}
+		{series}
+		{accessors}
+		{tableOptions}
+		{showDataTable}
+		{idBase}
+		{height}
+	/>
 {:else if kind === 'bar'}
-	<BarChart {title} {description} {series} {accessors} {tableOptions} {showDataTable} {idBase} />
+	<BarChart
+		{title}
+		{description}
+		{series}
+		{accessors}
+		{tableOptions}
+		{showDataTable}
+		{idBase}
+		{height}
+	/>
 {:else}
 	<ScatterChart
 		{title}
@@ -51,5 +80,6 @@ contract (they share the <ChartFigure> envelope).
 		{tableOptions}
 		{showDataTable}
 		{idBase}
+		{height}
 	/>
 {/if}

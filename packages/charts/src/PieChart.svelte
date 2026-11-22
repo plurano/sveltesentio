@@ -5,7 +5,8 @@ wrapped in <ChartFigure> for the WCAG a11y envelope (ADR-0013). Unlike the
 cartesian wrappers it takes a single flat `data` array with `key` / `value`
 accessors; slices are colored from the semantic oklch palette. The SR data
 table lists one row per slice (category + value) from the same accessors that
-drive the visual, so the two cannot drift.
+drive the visual, so the two cannot drift. Plot block size defaults to
+{@link DEFAULT_CHART_HEIGHT} so LayerChart fills a definite region.
 -->
 <script lang="ts" generics="TDatum">
 	import { PieChart as LcPieChart } from 'layerchart';
@@ -13,6 +14,7 @@ drive the visual, so the two cannot drift.
 	import { categoricalToFigure, type KeyAccessor, type ValueAccessor } from './chart-series.js';
 	import { chartPalette } from './palette.js';
 	import type { BuildTableOptions } from './a11y-table.js';
+	import { DEFAULT_CHART_HEIGHT } from './preset.js';
 
 	interface Props<T> {
 		/** Accessible name for the figure — required (no anonymous charts). */
@@ -33,6 +35,8 @@ drive the visual, so the two cannot drift.
 		showDataTable?: boolean | undefined;
 		/** Stable id prefix for aria wiring; auto-derived from the title if omitted. */
 		idBase?: string | undefined;
+		/** CSS block size of the plot region; defaults to {@link DEFAULT_CHART_HEIGHT}. */
+		height?: string | undefined;
 	}
 
 	const {
@@ -45,6 +49,7 @@ drive the visual, so the two cannot drift.
 		tableOptions,
 		showDataTable,
 		idBase,
+		height = DEFAULT_CHART_HEIGHT,
 	}: Props<TDatum> = $props();
 
 	const figure = $derived(categoricalToFigure(data, key, value, valueLabel));
@@ -58,6 +63,7 @@ drive the visual, so the two cannot drift.
 	{tableOptions}
 	{showDataTable}
 	{idBase}
+	{height}
 >
 	{#snippet chart()}
 		<LcPieChart data={[...data]} {key} {value} cRange={chartPalette} />

@@ -5,7 +5,9 @@ CartesianChartFigure — internal <ChartFigure> wiring shared by <AreaChart>,
 semantic oklch palette; motion collapses under `prefers-reduced-motion`. The SR
 data table is generated from the same `series` + `x`/`y` accessors that drive
 the visual. The four charts import it as `ChartFigure`: the chart-a11y-wrapper
-lint rule accepts layerchart marks only under an element of that name.
+lint rule accepts layerchart marks only under an element of that name. Defaults
+plot block size via {@link DEFAULT_CHART_HEIGHT} so LayerChart's 100% height fills
+a definite region.
 -->
 <script lang="ts" generics="TDatum">
 	import type { Snippet } from 'svelte';
@@ -17,7 +19,12 @@ lint rule accepts layerchart marks only under an element of that name.
 		type LayerSeries,
 	} from '../chart-series.js';
 	import type { ChartAccessors } from '../a11y-table.js';
-	import { dashboardPreset, prefersReducedMotion, type ChartPadding } from '../preset.js';
+	import {
+		DEFAULT_CHART_HEIGHT,
+		dashboardPreset,
+		prefersReducedMotion,
+		type ChartPadding,
+	} from '../preset.js';
 
 	interface Props<T> extends CartesianChartBaseProps<T> {
 		chart: Snippet<
@@ -33,6 +40,7 @@ lint rule accepts layerchart marks only under an element of that name.
 		tableOptions,
 		showDataTable,
 		idBase,
+		height = DEFAULT_CHART_HEIGHT,
 		chart: renderChart,
 	}: Props<TDatum> = $props();
 
@@ -49,6 +57,7 @@ lint rule accepts layerchart marks only under an element of that name.
 	{tableOptions}
 	{showDataTable}
 	{idBase}
+	{height}
 >
 	{#snippet chart()}
 		{@render renderChart({ lcSeries, padding: preset.padding, accessors })}

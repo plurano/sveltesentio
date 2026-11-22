@@ -12,6 +12,8 @@ alternative without constraining which charting library renders the visual:
   reads the underlying data, kept in sync with the visual via the same model.
 - A `chart` snippet (escape hatch) into which the caller renders LayerChart /
   uPlot / anything — this package does not pin LayerChart's volatile v2-next API.
+- An optional `height` on the plot region; semantic wrappers default it (see
+  `DEFAULT_CHART_HEIGHT`). Omit it for hand-sized escape-hatch snippets.
 
 Plain `tsc` does not type-check `.svelte`; the typed core lives in
 `./a11y-table` and `./preset` and is unit-tested there.
@@ -38,6 +40,11 @@ Plain `tsc` does not type-check `.svelte`; the typed core lives in
 		showDataTable?: boolean | undefined;
 		/** Stable id prefix for aria wiring; auto-derived if omitted. */
 		idBase?: string | undefined;
+		/**
+		 * CSS block size of the chart region (any length or `var()`). Unset = the
+		 * region sizes to its content (the `<Chart>` escape hatch).
+		 */
+		height?: string | undefined;
 		/** The visual chart. Receives nothing; renders LayerChart/uPlot/etc. */
 		chart: Snippet;
 	}
@@ -54,6 +61,7 @@ Plain `tsc` does not type-check `.svelte`; the typed core lives in
 		tableOptions,
 		showDataTable = true,
 		idBase,
+		height,
 		chart,
 	}: ChartFigureProps<TDatum> = $props();
 
@@ -77,6 +85,7 @@ Plain `tsc` does not type-check `.svelte`; the typed core lives in
 		role="img"
 		aria-labelledby={titleId}
 		aria-describedby={description ? descId : undefined}
+		style:block-size={height || undefined}
 	>
 		{@render chart()}
 	</div>

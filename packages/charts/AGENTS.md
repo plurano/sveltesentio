@@ -67,6 +67,10 @@ As landed in v0.2.0, `<ChartFigure>` enforces:
 - Generated from **same** `{series, x, y}` as visual -> two cannot drift.
 - `prefersReducedMotion()` feeds `dashboardPreset({ reducedMotion })`, collapsing tween duration to 0 (SC 2.3.3 / 2.2.2).
 
+## Invariants — layout
+
+- **Plot region needs definite block size** — LayerChart's root is `height: 100%` of the `role="img"` viz; semantic wrappers default `height` to `DEFAULT_CHART_HEIGHT` so the percentage resolves. `<ChartFigure>` / `<Chart>` omit it unless the caller sets `height`.
+
 ## Invariants — data
 
 - **No raw `Date.now()`** in axis formatters. Use injected clock from `@sveltesentio/core/clock` (ADR-0052) -> tests snapshot axes deterministically.
