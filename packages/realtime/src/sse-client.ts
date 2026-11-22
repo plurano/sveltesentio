@@ -1,4 +1,5 @@
-import { computeBackoff, type BackoffOptions } from './backoff.js';
+import type { BackoffOptions } from './backoff.js';
+import { createReconnectScheduler, type ReconnectScheduler } from './reconnect-scheduler.js';
 
 export interface SseEventLike {
 	readonly type: string;
@@ -36,19 +37,20 @@ export interface SseClientOptions {
 
 export class SseClient {
 	private readonly options: SseClientOptions;
+	/** Timers run through `createReconnectScheduler`, which calls them without a receiver (browsers throw `Illegal invocation` for a foreign `this`, #424). */
+	private readonly reconnect: ReconnectScheduler;
 	private source: EventSourceLike | undefined;
-	private attempt = 0;
-	private reconnectHandle: ReturnType<typeof setTimeout> | undefined;
 	private state: SseClientState = 'idle';
-	private readonly setTimer: typeof setTimeout;
-	private readonly clearTimer: typeof clearTimeout;
 	private readonly factory: EventSourceFactory;
 	private namedHandlers: Array<[string, (event: unknown) => void]> = [];
 
 	constructor(options: SseClientOptions) {
 		this.options = options;
-		this.setTimer = options.setTimeoutImpl ?? setTimeout;
-		this.clearTimer = options.clearTimeoutImpl ?? clearTimeout;
+		this.reconnect = createReconnectScheduler({
+			backoff: options.backoff,
+			setTimeoutImpl: options.setTimeoutImpl,
+			clearTimeoutImpl: options.clearTimeoutImpl,
+		});
 		const factory = options.eventSourceFactory ?? defaultFactory;
 		if (!factory) {
 			throw new Error('SseClient requires an eventSourceFactory (no global EventSource present)');
@@ -61,7 +63,7 @@ export class SseClient {
 	}
 
 	get currentAttempt(): number {
-		return this.attempt;
+		return this.reconnect.attempt;
 	}
 
 	start(): void {
@@ -70,7 +72,7 @@ export class SseClient {
 	}
 
 	close(): void {
-		this.clearReconnect();
+		this.reconnect.clear();
 		this.teardownSource();
 		this.setState('closed');
 	}
@@ -102,7 +104,7 @@ export class SseClient {
 	}
 
 	private handleOpen = (): void => {
-		this.attempt = 0;
+		this.reconnect.reset();
 		this.setState('open');
 		this.options.onOpen?.();
 	};
@@ -122,26 +124,21 @@ export class SseClient {
 	}
 
 	private handleError = (error: unknown): void => {
-		this.options.onError?.(error, this.attempt);
+		this.options.onError?.(error, this.reconnect.attempt);
 		this.teardownSource();
 		this.scheduleReconnect();
 	};
 
+	/**
+	 * Arms the retry before announcing `connecting`, so a `close()` called from
+	 * inside `onStateChange` cancels the pending timer instead of leaving a
+	 * closed client to reconnect.
+	 */
 	private scheduleReconnect(): void {
-		this.attempt += 1;
-		const delay = computeBackoff(this.attempt, this.options.backoff);
-		this.setState('connecting');
-		this.reconnectHandle = this.setTimer(() => {
-			this.reconnectHandle = undefined;
+		this.reconnect.schedule(() => {
 			this.connect();
-		}, delay);
-	}
-
-	private clearReconnect(): void {
-		if (this.reconnectHandle !== undefined) {
-			this.clearTimer(this.reconnectHandle);
-			this.reconnectHandle = undefined;
-		}
+		});
+		this.setState('connecting');
 	}
 
 	private teardownSource(): void {

@@ -38,11 +38,22 @@ class FakeEventSource implements EventSourceLike {
 	}
 }
 
+function receiverChecked<T extends (...args: never[]) => unknown>(impl: T): T {
+	// Cast preserves overloaded timer signatures (such as Node's setTimeout.__promisify__) as T.
+	return function (this: unknown, ...args: never[]): unknown {
+		if (this !== undefined && this !== globalThis) {
+			throw new TypeError('Illegal invocation');
+		}
+		return impl(...args);
+	} as unknown as T;
+}
+
 beforeEach(() => {
 	vi.useFakeTimers();
 	FakeEventSource.instances = [];
 });
 afterEach(() => {
+	vi.unstubAllGlobals();
 	vi.useRealTimers();
 });
 
@@ -271,5 +282,68 @@ describe('SseClient', () => {
 			type: 'search_dispatched',
 			data: 'fresh',
 		});
+	});
+
+	it('reconnects with the default timers when they refuse a foreign receiver (#424)', () => {
+		const fakeSet = globalThis.setTimeout;
+		const fakeClear = globalThis.clearTimeout;
+		vi.stubGlobal('setTimeout', receiverChecked(fakeSet));
+		vi.stubGlobal('clearTimeout', receiverChecked(fakeClear));
+
+		const client = new SseClient({
+			url: '/stream',
+			backoff: { minMs: 500, maxMs: 10_000, jitter: 0, random: () => 0.5 },
+			eventSourceFactory: (url, init) => new FakeEventSource(url, init),
+		});
+		client.start();
+		FakeEventSource.instances[0]!.emit('open');
+		expect(() => {
+			FakeEventSource.instances[0]!.emit('error', new Error('drop'));
+		}).not.toThrow();
+
+		vi.advanceTimersByTime(1000);
+		expect(FakeEventSource.instances.length).toBe(2);
+		expect(client.currentAttempt).toBe(1);
+	});
+
+	it('close() cancels a pending reconnect through the default clearTimeout', () => {
+		const fakeSet = globalThis.setTimeout;
+		const fakeClear = globalThis.clearTimeout;
+		vi.stubGlobal('setTimeout', receiverChecked(fakeSet));
+		vi.stubGlobal('clearTimeout', receiverChecked(fakeClear));
+
+		const client = new SseClient({
+			url: '/stream',
+			backoff: { minMs: 500, maxMs: 10_000, jitter: 0, random: () => 0.5 },
+			eventSourceFactory: (url, init) => new FakeEventSource(url, init),
+		});
+		client.start();
+		FakeEventSource.instances[0]!.emit('error', new Error('drop'));
+		expect(() => {
+			client.close();
+		}).not.toThrow();
+
+		vi.advanceTimersByTime(60_000);
+		expect(FakeEventSource.instances.length).toBe(1);
+		expect(client.currentState).toBe('closed');
+	});
+
+	it('close() from onStateChange during a reconnect leaves no retry armed', () => {
+		const client: SseClient = new SseClient({
+			url: '/stream',
+			backoff: { minMs: 500, maxMs: 10_000, jitter: 0, random: () => 0.5 },
+			eventSourceFactory: (url, init) => new FakeEventSource(url, init),
+			onStateChange: (s) => {
+				if (s === 'connecting' && client.currentAttempt === 1) client.close();
+			},
+		});
+		client.start();
+		FakeEventSource.instances[0]!.emit('open');
+		FakeEventSource.instances[0]!.emit('error', new Error('drop'));
+
+		vi.advanceTimersByTime(60_000);
+		expect(FakeEventSource.instances.length).toBe(1);
+		expect(client.currentState).toBe('closed');
+		expect(vi.getTimerCount()).toBe(0);
 	});
 });
