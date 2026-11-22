@@ -3,11 +3,13 @@
 // The component is a thin view over the pure `CommandRegistry`; here we mount it
 // open with a real registry and drive it through the DOM.
 import { fireEvent, render, waitFor, within } from '@testing-library/svelte';
+import { tick } from 'svelte';
 import { describe, expect, it, vi } from 'vitest';
 import { requireAt } from '@sveltesentio/testing';
 import CommandPalette from '../src/cmd/CommandPalette.svelte';
 import { CommandRegistry, type Command } from '../src/cmd/registry.js';
 import { expectNoAxeViolations } from './axe-helper.js';
+import { flushQueuedDialogClose } from './dialog-stub.js';
 
 function makeRegistry(extra: Partial<Record<string, () => void>> = {}): {
 	registry: CommandRegistry;
@@ -247,5 +249,18 @@ describe('<CommandPalette>', () => {
 		await rerender({ open: false });
 		await rerender({ open: true });
 		await waitFor(() => expect(container.querySelectorAll('dialog')).toHaveLength(1));
+	});
+
+	it('keeps the reopened palette open when the unmounted dialog fires its queued close (boundary)', async () => {
+		const { registry } = makeRegistry();
+		const { rerender, container } = render(CommandPalette, { registry, open: true });
+		await rerender({ open: false });
+		await rerender({ open: true });
+		const replacement = container.querySelector('dialog');
+		expect(replacement).toHaveAttribute('open');
+		await flushQueuedDialogClose();
+		await tick();
+		expect(container.querySelector('dialog')).toBe(replacement);
+		expect(replacement).toHaveAttribute('open');
 	});
 });

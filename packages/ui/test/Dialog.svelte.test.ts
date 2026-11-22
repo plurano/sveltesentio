@@ -3,10 +3,12 @@
 // moving into the panel on open + returning on close, and axe-clean. The focus-
 // trap math is unit-tested in dialog-logic.svelte.test.ts; here we drive the DOM.
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';
+import { tick } from 'svelte';
 import { describe, expect, it } from 'vitest';
 import Dialog from '../src/dialog/Dialog.svelte';
 import DialogHarness from './DialogHarness.svelte';
 import { expectNoAxeViolations } from './axe-helper.js';
+import { flushQueuedDialogClose } from './dialog-stub.js';
 
 describe('<Dialog>', () => {
 	it('renders nothing when closed', () => {
@@ -112,5 +114,17 @@ describe('<Dialog>', () => {
 		const dialog = screen.getByRole('dialog');
 		dialog.dispatchEvent(new Event('cancel', { bubbles: false, cancelable: true }));
 		await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+	});
+
+	it('keeps the reopened dialog open when the unmounted dialog fires its queued close (boundary)', async () => {
+		const { rerender, container } = render(Dialog, { open: true, title: 'Hi' });
+		await rerender({ open: false });
+		await rerender({ open: true });
+		const replacement = container.querySelector('dialog');
+		expect(replacement).toHaveAttribute('open');
+		await flushQueuedDialogClose();
+		await tick();
+		expect(container.querySelector('dialog')).toBe(replacement);
+		expect(replacement).toHaveAttribute('open');
 	});
 });
