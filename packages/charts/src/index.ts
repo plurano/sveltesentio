@@ -14,6 +14,7 @@ export {
 } from './a11y-table.js';
 
 export {
+	DEFAULT_CHART_HEIGHT,
 	dashboardPreset,
 	prefersReducedMotion,
 	type DashboardPreset,

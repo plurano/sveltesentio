@@ -18,6 +18,7 @@ key / value accessors (the Pie wrapper's distinct prop shape).
 		tableOptions?: BuildTableOptions<Slice> | undefined;
 		showDataTable?: boolean | undefined;
 		idBase?: string | undefined;
+		height?: string | undefined;
 	}
 
 	const {
@@ -30,6 +31,7 @@ key / value accessors (the Pie wrapper's distinct prop shape).
 		tableOptions,
 		showDataTable,
 		idBase,
+		height,
 	}: Props = $props();
 </script>
 
@@ -43,4 +45,5 @@ key / value accessors (the Pie wrapper's distinct prop shape).
 	{tableOptions}
 	{showDataTable}
 	{idBase}
+	{height}
 />

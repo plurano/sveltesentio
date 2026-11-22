@@ -4,6 +4,7 @@ import CartesianHarness from './CartesianChartHarness.svelte';
 import PieHarness from './PieChartHarness.svelte';
 import ChartHarness from './ChartHarness.svelte';
 import { expectNoAxeViolations } from './axe-helper.js';
+import { DEFAULT_CHART_HEIGHT } from '../src/preset.js';
 import type { CartesianSeries } from '../src/chart-series.js';
 import type { ChartAccessors, ChartSeries } from '../src/a11y-table.js';
 import type { Point, Slice } from './fixture-types.js';
@@ -37,6 +38,10 @@ const slices: Slice[] = [
 
 const CARTESIAN_KINDS = ['line', 'area', 'bar', 'scatter'] as const;
 
+function expectDefaultChartHeight(img: HTMLElement): void {
+	expect(img.style.getPropertyValue('block-size')).toBe(DEFAULT_CHART_HEIGHT);
+}
+
 describe.each(CARTESIAN_KINDS)('%s chart wrapper', (kind) => {
 	function renderChart(
 		props: {
@@ -45,6 +50,7 @@ describe.each(CARTESIAN_KINDS)('%s chart wrapper', (kind) => {
 			series?: readonly CartesianSeries<Point>[];
 			showDataTable?: boolean;
 			tableOptions?: { xLabel?: string };
+			height?: string;
 		} = {},
 	) {
 		return render(CartesianHarness, {
@@ -55,6 +61,7 @@ describe.each(CARTESIAN_KINDS)('%s chart wrapper', (kind) => {
 			accessors,
 			showDataTable: props.showDataTable,
 			tableOptions: props.tableOptions,
+			height: props.height,
 		});
 	}
 
@@ -111,6 +118,16 @@ describe.each(CARTESIAN_KINDS)('%s chart wrapper', (kind) => {
 		});
 		await expectNoAxeViolations(container);
 	});
+
+	it('defaults the viz block-size to DEFAULT_CHART_HEIGHT', () => {
+		const { getByRole } = renderChart();
+		expectDefaultChartHeight(getByRole('img'));
+	});
+
+	it('overrides the viz block-size when height is set', () => {
+		const { getByRole } = renderChart({ height: '8rem' });
+		expect(getByRole('img').style.getPropertyValue('block-size')).toBe('8rem');
+	});
 });
 
 describe('pie chart wrapper', () => {
@@ -120,6 +137,7 @@ describe('pie chart wrapper', () => {
 			description?: string;
 			valueLabel?: string;
 			showDataTable?: boolean;
+			height?: string;
 		} = {},
 	) {
 		return render(PieHarness, {
@@ -130,6 +148,7 @@ describe('pie chart wrapper', () => {
 			value: (d: Slice) => d.count,
 			valueLabel: props.valueLabel,
 			showDataTable: props.showDataTable,
+			height: props.height,
 		});
 	}
 
@@ -169,6 +188,16 @@ describe('pie chart wrapper', () => {
 	it('is axe-clean (WCAG 2.2 AA)', async () => {
 		const { container } = renderPie({ description: 'Share of sessions by browser.' });
 		await expectNoAxeViolations(container);
+	});
+
+	it('defaults the viz block-size to DEFAULT_CHART_HEIGHT', () => {
+		const { getByRole } = renderPie();
+		expectDefaultChartHeight(getByRole('img'));
+	});
+
+	it('overrides the viz block-size when height is set', () => {
+		const { getByRole } = renderPie({ height: '20rem' });
+		expect(getByRole('img').style.getPropertyValue('block-size')).toBe('20rem');
 	});
 });
 

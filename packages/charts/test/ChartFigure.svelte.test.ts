@@ -33,6 +33,7 @@ function renderProps(props: {
 	showDataTable?: boolean;
 	idBase?: string;
 	tableOptions?: { xLabel?: string };
+	height?: string;
 }) {
 	return {
 		title: props.title ?? 'Daily sessions',
@@ -42,6 +43,7 @@ function renderProps(props: {
 		showDataTable: props.showDataTable,
 		idBase: props.idBase,
 		tableOptions: props.tableOptions,
+		height: props.height,
 	};
 }
 
@@ -198,5 +200,23 @@ describe('ChartFigure', () => {
 	it('is axe-clean when the data table is suppressed', async () => {
 		const { container } = renderFigure({ showDataTable: false });
 		await expectNoAxeViolations(container);
+	});
+
+	it('sets block-size on the viz when height is provided', () => {
+		const { getByRole } = renderFigure({ height: '12rem' });
+		const img = getByRole('img');
+		expect(img.style.getPropertyValue('block-size')).toBe('12rem');
+	});
+
+	it('leaves block-size unset on the viz when height is omitted (escape hatch)', () => {
+		const { getByRole } = renderFigure();
+		const img = getByRole('img');
+		expect(img.style.getPropertyValue('block-size')).toBe('');
+	});
+
+	it('leaves block-size unset when height is an empty string', () => {
+		const { getByRole } = renderFigure({ height: '' });
+		const img = getByRole('img');
+		expect(img.style.getPropertyValue('block-size')).toBe('');
 	});
 });

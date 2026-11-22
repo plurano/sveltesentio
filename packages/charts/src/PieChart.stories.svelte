@@ -1,6 +1,7 @@
 <script module lang="ts">
 	import { defineMeta } from '@storybook/addon-svelte-csf';
 	import PieChart from './PieChart.svelte';
+	import { assertBlockSize, remPx, waitForPlot } from '../test/viz-size-probe.js';
 
 	// One flat datum per slice; `key` labels the slice, `value` sizes it.
 	interface Slice {
@@ -22,6 +23,7 @@
 		title: 'charts/PieChart',
 		component: PieChart,
 		tags: ['autodocs'],
+		parameters: { layout: 'padded' },
 		args: {
 			title: 'Browser share',
 			data,
@@ -30,6 +32,15 @@
 		},
 	});
 </script>
+
+<Story
+	name="Default size"
+	args={{ title: 'Browser share', data, key, value }}
+	play={async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+		const { viz } = await waitForPlot(canvasElement);
+		assertBlockSize(viz, remPx(16), 'PieChart default viz');
+	}}
+/>
 
 <!-- Slices colored from the semantic oklch palette; one SR row per slice. -->
 <Story name="Default" args={{ title: 'Browser share', data, key, value }} />

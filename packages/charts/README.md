@@ -72,6 +72,23 @@ that supplies the text alternative, independent of which library draws the pixel
 The off-screen `<table>` is generated from the same `series` + `accessors`, so the
 screen-reader fallback can never drift from the visual.
 
+### Sizing
+
+Semantic wrappers (`<LineChart>`, `<AreaChart>`, `<BarChart>`, `<ScatterChart>`,
+`<PieChart>`) default the plot region to **16rem** via `DEFAULT_CHART_HEIGHT`
+(`var(--ssentio-chart-height, 16rem)`). Set `height="20rem"` on a single chart,
+or set `--ssentio-chart-height` on a layout ancestor to retarget every chart
+below it. `<ChartFigure>` and `<Chart>` stay content-sized unless you pass
+`height` (for hand-placed escape-hatch snippets).
+
+```svelte
+<div style="--ssentio-chart-height: 12rem">
+  <LineChart title="Sessions" {series} {accessors} />
+</div>
+
+<BarChart title="Revenue" {series} {accessors} height="10rem" />
+```
+
 ## Installation
 
 ```bash

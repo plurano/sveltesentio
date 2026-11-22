@@ -55,6 +55,13 @@ export interface DashboardPresetOptions {
 const BASE_PADDING: ChartPadding = { top: 8, right: 16, bottom: 28, left: 40 };
 
 /**
+ * Block size the semantic chart wrappers apply to the plot region (`role="img"`).
+ * An app sets `--ssentio-chart-height` on any ancestor to retarget every wrapper
+ * below it; the per-chart `height` prop overrides this default.
+ */
+export const DEFAULT_CHART_HEIGHT = 'var(--ssentio-chart-height, 16rem)';
+
+/**
  * Build the dashboard chart preset. Defaults target a typical admin panel:
  * room for a bottom time axis + left value axis, both grids on, an x-bisect
  * tooltip, and a short cubic-out entry tween that is disabled under reduced

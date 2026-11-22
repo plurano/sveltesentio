@@ -1,5 +1,16 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { dashboardPreset, prefersReducedMotion } from '../src/preset.js';
+import { DEFAULT_CHART_HEIGHT, dashboardPreset, prefersReducedMotion } from '../src/preset.js';
+import { DEFAULT_CHART_HEIGHT as ROOT_DEFAULT_CHART_HEIGHT } from '../src/index.js';
+
+describe('DEFAULT_CHART_HEIGHT', () => {
+	it('uses --ssentio-chart-height with a 16rem fallback', () => {
+		expect(DEFAULT_CHART_HEIGHT).toBe('var(--ssentio-chart-height, 16rem)');
+	});
+
+	it('is re-exported from the package root', () => {
+		expect(ROOT_DEFAULT_CHART_HEIGHT).toBe(DEFAULT_CHART_HEIGHT);
+	});
+});
 
 describe('dashboardPreset', () => {
 	it('returns the admin-panel defaults', () => {

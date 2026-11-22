@@ -1,6 +1,7 @@
 <script module lang="ts">
 	import { defineMeta } from '@storybook/addon-svelte-csf';
 	import BarChart from './BarChart.svelte';
+	import { assertBlockSize, remPx, waitForPlot } from '../test/viz-size-probe.js';
 	import type { CartesianSeries } from './chart-series.js';
 	import type { ChartAccessors } from './a11y-table.js';
 
@@ -40,6 +41,7 @@
 		title: 'charts/BarChart',
 		component: BarChart,
 		tags: ['autodocs'],
+		parameters: { layout: 'padded' },
 		args: {
 			title: 'Revenue by region',
 			series,
@@ -47,6 +49,28 @@
 		},
 	});
 </script>
+
+<Story
+	name="Default size"
+	args={{ title: 'Revenue by region', series: single, accessors }}
+	play={async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+		const { viz } = await waitForPlot(canvasElement);
+		assertBlockSize(viz, remPx(16), 'BarChart default viz');
+	}}
+/>
+
+<Story
+	name="Height from CSS custom property"
+	asChild
+	play={async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+		const { viz } = await waitForPlot(canvasElement);
+		assertBlockSize(viz, remPx(12), 'BarChart CSS var viz');
+	}}
+>
+	<div style="--ssentio-chart-height: 12rem">
+		<BarChart title="Revenue by region" series={single} {accessors} />
+	</div>
+</Story>
 
 <!-- Single vertical series (default orientation). -->
 <Story

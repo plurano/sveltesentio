@@ -27,4 +27,5 @@ export interface ChartHarnessProps {
 	tableOptions?: BuildTableOptions<Point> | undefined;
 	showDataTable?: boolean | undefined;
 	idBase?: string | undefined;
+	height?: string | undefined;
 }

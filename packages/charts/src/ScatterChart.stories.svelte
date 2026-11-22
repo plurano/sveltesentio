@@ -1,6 +1,7 @@
 <script module lang="ts">
 	import { defineMeta } from '@storybook/addon-svelte-csf';
 	import ScatterChart from './ScatterChart.svelte';
+	import { assertBlockSize, remPx, waitForPlot } from '../test/viz-size-probe.js';
 	import type { CartesianSeries } from './chart-series.js';
 	import type { ChartAccessors } from './a11y-table.js';
 
@@ -41,6 +42,7 @@
 		title: 'charts/ScatterChart',
 		component: ScatterChart,
 		tags: ['autodocs'],
+		parameters: { layout: 'padded' },
 		args: {
 			title: 'Latency vs load',
 			series,
@@ -48,6 +50,15 @@
 		},
 	});
 </script>
+
+<Story
+	name="Default size"
+	args={{ title: 'Latency vs load', series, accessors }}
+	play={async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+		const { viz } = await waitForPlot(canvasElement);
+		assertBlockSize(viz, remPx(16), 'ScatterChart default viz');
+	}}
+/>
 
 <!-- Two point clusters, each a palette color; the SR table unions x values. -->
 <Story name="Two clusters" args={{ title: 'Latency vs load', series, accessors }} />
