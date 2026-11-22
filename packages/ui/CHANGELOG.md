@@ -2,13 +2,12 @@
 
 ## [0.9.1](https://github.com/plurano/sveltesentio/compare/ui-v0.9.0...ui-v0.9.1) (2026-11-22)
 
-
 ### Bug Fixes
 
-* **deps:** update dependency jsdom to v31 ([#611](https://github.com/plurano/sveltesentio/issues/611)) ([13dcbcb](https://github.com/plurano/sveltesentio/commit/13dcbcb6f72f51bb25f5d3ca3305282a6829146d))
-* **ui:** add toaster field so toastPreset sizing reaches svelte-sonner ([#647](https://github.com/plurano/sveltesentio/issues/647)) ([4b30cf2](https://github.com/plurano/sveltesentio/commit/4b30cf22dba6be71153d00f36845afe046d2291a))
-* **ui:** render CommandPalette and Dialog in the top layer ([#669](https://github.com/plurano/sveltesentio/issues/669)) ([c1685bd](https://github.com/plurano/sveltesentio/commit/c1685bd3b689a4534dc2b35cf7c2a5470c15fefa))
-* **ui:** ship a Tailwind v4 source stylesheet for the component classes ([#502](https://github.com/plurano/sveltesentio/issues/502)) ([dc41379](https://github.com/plurano/sveltesentio/commit/dc413790b06efb3555247c383f328c758a3639cf))
+- **deps:** update dependency jsdom to v31 ([#611](https://github.com/plurano/sveltesentio/issues/611)) ([13dcbcb](https://github.com/plurano/sveltesentio/commit/13dcbcb6f72f51bb25f5d3ca3305282a6829146d))
+- **ui:** add toaster field so toastPreset sizing reaches svelte-sonner ([#647](https://github.com/plurano/sveltesentio/issues/647)) ([4b30cf2](https://github.com/plurano/sveltesentio/commit/4b30cf22dba6be71153d00f36845afe046d2291a))
+- **ui:** render CommandPalette and Dialog in the top layer ([#669](https://github.com/plurano/sveltesentio/issues/669)) ([c1685bd](https://github.com/plurano/sveltesentio/commit/c1685bd3b689a4534dc2b35cf7c2a5470c15fefa))
+- **ui:** ship a Tailwind v4 source stylesheet for the component classes ([#502](https://github.com/plurano/sveltesentio/issues/502)) ([dc41379](https://github.com/plurano/sveltesentio/commit/dc413790b06efb3555247c383f328c758a3639cf))
 
 ## [0.9.0](https://github.com/golusoris/sveltesentio/compare/ui-v0.8.3...ui-v0.9.0) (2026-10-26)
 
