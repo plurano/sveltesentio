@@ -1,6 +1,7 @@
 // Issue #622: docs/compose/toast.md drifted from @sveltesentio/ui/toast; this
-// suite pins the toast.md preset sizing table, @sveltesentio/ui/toast imports
-// in every compose recipe, and removed identifiers against the shipped source.
+// suite pins the toast.md preset sizing table, @sveltesentio/ui/toast value
+// and type imports (re-exports and direct declarations, guarding against
+// export *) across every compose recipe, and removed pre-#622 identifiers.
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -16,6 +17,9 @@ const MAX_TABLE_ROWS = 64;
 const MAX_TABLE_COLS = 32;
 const MAX_MATCHES = 64;
 
+const EXPORT_STAR_RE = /\bexport(?:\s+type)?\s*\*/;
+const EXPORT_STAR_MESSAGE = 'src/toast/index.ts uses export *; extend parseIndexTypeExports';
+const EXPORT_TYPE_DECL_RE = /\bexport\s+(?:declare\s+)?(?:type|interface)\s+([A-Za-z_$][\w$]*)/g;
 const EXPORT_TYPE_BLOCK_RE = /\bexport\s+type\s*\{([^}]*)\}/g;
 const EXPORT_BLOCK_RE = /\bexport\s*\{([^}]*)\}/g;
 const TOAST_IMPORT_RE =
@@ -112,9 +116,18 @@ function lastIdentifier(spec: string): string {
 	return parts.at(-1)?.trim() ?? '';
 }
 
+function stripComments(source: string): string {
+	return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\r\n]*/g, '');
+}
+
 function parseIndexTypeExports(source: string): Set<string> {
-	const stripped = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\r\n]*/g, '');
+	const stripped = stripComments(source);
 	const names = new Set<string>();
+	const declMatches = Array.from(stripped.matchAll(EXPORT_TYPE_DECL_RE));
+	for (const match of declMatches.slice(0, MAX_MATCHES)) {
+		const exported = match[1]?.trim() ?? '';
+		if (exported.length > 0) names.add(exported);
+	}
 	const typeBlocks = Array.from(stripped.matchAll(EXPORT_TYPE_BLOCK_RE));
 	for (const match of typeBlocks.slice(0, MAX_MATCHES)) {
 		const specs = (match[1] ?? '').split(',').slice(0, MAX_TABLE_COLS);
@@ -206,6 +219,7 @@ describe('docs/compose/toast.md contract (#622)', () => {
 			import('../src/toast/index.js'),
 		]);
 		expect(files).toContain('toast.md');
+		expect(stripComments(indexSource), EXPORT_STAR_MESSAGE).not.toMatch(EXPORT_STAR_RE);
 		const valueExports = new Set(Object.keys(runtimeModule));
 		const typeExports = parseIndexTypeExports(indexSource);
 
@@ -238,6 +252,25 @@ describe('docs/compose/toast.md contract (#622)', () => {
 			typeExports,
 		);
 		expect(syntheticType.unknown).toEqual(['type ToastOptions']);
+	});
+
+	it('parses direct and re-exported types in parseIndexTypeExports', () => {
+		const synthetic = [
+			'export type Foo = string;',
+			'export interface Bar { a: string }',
+			"export type { A, B as C } from './x.js';",
+			"export { type D, e } from './y.js';",
+		].join('\n');
+		const parsed = parseIndexTypeExports(synthetic);
+
+		expect(parsed).toEqual(new Set(['Foo', 'Bar', 'A', 'C', 'D']));
+		expect(parsed.has('e')).toBe(false);
+		expect(parsed.has('B')).toBe(false);
+		const declared = parseIndexTypeExports('export declare type Declared = number;');
+		expect(declared).toEqual(new Set(['Declared']));
+		expect(parseIndexTypeExports('')).toEqual(new Set());
+		expect(stripComments("export * from './preset.js';")).toMatch(EXPORT_STAR_RE);
+		expect(stripComments('// export * in comment')).not.toMatch(EXPORT_STAR_RE);
 	});
 
 	it('omits removed pre-#622 identifiers from the recipe', async () => {

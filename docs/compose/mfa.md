@@ -43,8 +43,10 @@ same pending challenge so replay attacks fail server-side.
 ## Install
 
 ```bash
-pnpm add @sveltesentio/auth
+pnpm add @sveltesentio/auth svelte-sonner
 ```
+
+`svelte-sonner` provides `toast` for the `Narrow the error` and `Enrollment` examples below.
 
 ## Narrow the error
 

@@ -41,6 +41,17 @@ Mount a single `<Toaster>` in your root `src/routes/+layout.svelte` and spread `
 
 `data.interfaceType` is a value the app's root `+layout.ts` or `+layout.server.ts` `load` returns (typed `InterfaceType`), the same value it puts on `data-interface`; `@sveltesentio/ui` does not classify the device.
 
+`@sveltesentio/core`'s `SentioConfig.interfaceType` ([sentio-config.md](sentio-config.md)) names the TV preset `'tenfoot'`, which `toastPreset()` does not accept (`@sveltesentio/ui/presets` uses `'10foot'`); map it in the `load` that returns `data.interfaceType`:
+
+```ts
+import type { InterfaceType as ConfigInterfaceType } from '@sveltesentio/core';
+import type { InterfaceType } from '@sveltesentio/ui/presets';
+
+export function toUiInterface(value: ConfigInterfaceType): InterfaceType {
+  return value === 'tenfoot' ? '10foot' : value;
+}
+```
+
 `toastPreset()` accepts either an `InterfaceType` name or a full `InterfacePreset` object, so a single-interface app can pass the same preset constant to both `presetCss()` (which scopes `--ui-*` custom properties to `[data-interface="<name>"]` by default) and `toastPreset()`:
 
 ```ts
@@ -86,13 +97,25 @@ Import `toast` directly from `'svelte-sonner'` (`svelte-sonner` also exports `To
 
 ```ts
 import { toast } from 'svelte-sonner';
+import { ProblemError } from '@sveltesentio/core/problem';
 import { api } from '#lib/api/client.js';
 
 toast('Changes queued');
 toast.info('Sync started');
 toast.warning('Quota above 80%');
 
-toast.promise(api.PUT('/v1/flow', { body: { enabled: true } }), {
+async function saveFlow(): Promise<void> {
+  const { response } = await api.PUT('/v1/flow', { body: { enabled: true } });
+  if (!response.ok) {
+    throw new ProblemError({
+      type: 'about:blank',
+      title: response.statusText || 'Save failed',
+      status: response.status,
+    });
+  }
+}
+
+toast.promise(saveFlow(), {
   loading: 'Saving...',
   success: () => 'Saved',
   error: () => 'Save failed',
@@ -102,11 +125,13 @@ toast.promise(api.PUT('/v1/flow', { body: { enabled: true } }), {
 toast.dismiss();
 ```
 
+`problemMiddleware()` already throws for `application/problem+json` failures; the `response.ok` check covers other non-2xx responses, which resolve instead of rejecting.
+
 Per-toast `ExternalToast` / `ToastOptions` options include `description`, `action`, `cancel`, `important`, `duration`, `richColors`, `closeButton`, and `dismissible`.
 
 ## Errors + ProblemError
 
-HTTP failures from `@sveltesentio/core/http` arrive as `ProblemError` from `'@sveltesentio/core/problem'` (RFC 9457 — see [http-client.md](http-client.md)), carrying `title`, `detail`, `status`, `type`, `invalidParams`, and `message`, which falls back from `detail` to `title`, then to `Problem: <type> (<status>)`. Narrow with `instanceof ProblemError`: route field-level validation (`invalidParams`) to inline form state via `problemToFieldErrors` from `'@sveltesentio/forms'` ([forms.md](forms.md)), toast non-field `ProblemError` instances with `err.title ?? err.message` and `{ description: err.detail }`, and show a fixed generic message for any other `unknown` value — never pass raw `String(err)` of an untyped catch binding to a toast:
+`problemMiddleware()` from `@sveltesentio/core/http` throws `ProblemError` from `'@sveltesentio/core/problem'` (RFC 9457 — see [http-client.md](http-client.md)) for non-2xx `application/problem+json` responses, carrying `title`, `detail`, `status`, `type`, `invalidParams`, and `message`, which falls back from `detail` to `title`, then to `Problem: <type> (<status>)`; other non-2xx responses resolve with `{ error, response }`. Narrow with `instanceof ProblemError`: route field-level validation (`invalidParams`) to inline form state via `problemToFieldErrors` from `'@sveltesentio/forms'` ([forms.md](forms.md)), toast non-field `ProblemError` instances with `err.title ?? err.message` and `{ description: err.detail }`, and log any other `unknown` value with `console.error` before showing a fixed generic message — never pass raw `String(err)` of an untyped catch binding to a toast:
 
 ```ts
 import { toast } from 'svelte-sonner';
@@ -114,22 +139,31 @@ import { ProblemError } from '@sveltesentio/core/problem';
 import { problemToFieldErrors, type FieldErrors } from '@sveltesentio/forms';
 import { api } from '#lib/api/client.js';
 
-export async function createFlow(name: string): Promise<FieldErrors | null> {
+export type CreateFlowResult = { ok: true } | { ok: false; fieldErrors: FieldErrors | null };
+
+export async function createFlow(name: string): Promise<CreateFlowResult> {
   try {
-    const { error } = await api.POST('/v1/flows', { body: { name } });
-    if (error) throw error;
+    const { response } = await api.POST('/v1/flows', { body: { name } });
+    if (!response.ok) {
+      throw new ProblemError({
+        type: 'about:blank',
+        title: response.statusText || 'Unable to create flow',
+        status: response.status,
+      });
+    }
     toast.success('Flow created');
-    return null;
+    return { ok: true };
   } catch (err: unknown) {
     if (err instanceof ProblemError) {
       if (err.invalidParams && err.invalidParams.length > 0) {
-        return problemToFieldErrors(err);
+        return { ok: false, fieldErrors: problemToFieldErrors(err) };
       }
       toast.error(err.title ?? err.message, { description: err.detail });
-      return null;
+      return { ok: false, fieldErrors: null };
     }
+    console.error('create_flow_failed', { error: err });
     toast.error('Unable to create flow');
-    return null;
+    return { ok: false, fieldErrors: null };
   }
 }
 ```
@@ -214,7 +248,7 @@ Keep custom toast surfaces on the semantic oklch token pipeline ([theming.md](th
 
 What `<Toaster {...p.toaster} />` delivers to the mounted DOM ([ADR-0016](../adr/0016-ui-toast-thin-wrapper-preset-sizing.md)):
 
-- `p.toaster.position` and `p.toaster.offset` set viewport placement and edge inset.
+- `p.toaster.position` and `p.toaster.offset` set viewport placement and edge inset above `svelte-sonner`'s `600px` mobile breakpoint. At `600px` and below (`@media (max-width: 600px)`), `svelte-sonner` 1.2.1 insets from its own `mobileOffset` prop (default `'16px'`) and sizes each toast to `calc(100% - var(--mobile-offset-left) * 2)`, so preset `offset` and `width` do not apply there ([ADR-0016](../adr/0016-ui-toast-thin-wrapper-preset-sizing.md) leaves that mobile layout unchanged). `toastPreset()` sets no `mobileOffset`; an app wanting the preset inset on narrow viewports passes `mobileOffset={p.toaster.offset}` alongside `{...p.toaster}`.
 - `p.toaster.gap` sets `style:--gap` (in CSS `px`) on the toaster `<ol>`. Expanded-stack spacing reads `gap` starting in `svelte-sonner` `1.2.0`; on `1.0.x` and `1.1.x` (still accepted by the `>=1.0.0 <2` optional peer range), expanded offsets stay at `svelte-sonner`'s fixed `14px` ([`@sveltesentio/ui` README](../../packages/ui/README.md)).
 - `p.toaster.style` sets `min-width: min(<width>, 100% - 2 * <offset>);` on every position-group `<ol>` (`[data-sonner-toaster]`) so toasts wider than `svelte-sonner`'s `356px` list default expand cleanly while clamping to the viewport; below `svelte-sonner`'s `600px` mobile breakpoint, mobile `width: 100%` rules remain intact.
 - `p.toaster.toastOptions.style` sets semicolon-terminated `--width: min(<width>, 100%); --border-radius: <radius>; padding: <padding>; font-size: <baseFontSize>;` on each toast `<li>` (`[data-sonner-toast]`).
