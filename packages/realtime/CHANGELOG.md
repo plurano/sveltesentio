@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.8.1](https://github.com/plurano/sveltesentio/compare/realtime-v0.8.0...realtime-v0.8.1) (2026-11-22)
+
+### Bug Fixes
+
+- **realtime:** reconnect SseClient through the shared scheduler ([#663](https://github.com/plurano/sveltesentio/issues/663)) ([2b1ef94](https://github.com/plurano/sveltesentio/commit/2b1ef94974adbca6c9efdf0a40d6bed095e86e22)), closes [#424](https://github.com/plurano/sveltesentio/issues/424)
+
 ## [0.8.0](https://github.com/golusoris/sveltesentio/compare/realtime-v0.7.1...realtime-v0.8.0) (2026-10-25)
 
 ### ⚠ BREAKING CHANGES
