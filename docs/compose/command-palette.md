@@ -100,6 +100,14 @@ registerCommands([newFlow, searchFlows, toggleTheme]);
 The palette binds `$mod+k` to open itself by default — override via
 `<CommandPalette openShortcut="$mod+/" />`.
 
+The open palette is a native modal `<dialog>` shown with `showModal()`, so
+it paints in the browser top layer: above sticky headers, above positioned
+elements whatever their `z-index`, and outside any transformed or clipping
+ancestor. Where it sits in the component tree does not change what covers
+it. The `Over page content` story in
+`packages/ui/src/cmd/CommandPalette.stories.svelte` checks this with a
+hit test on the panel and every option.
+
 ## Route-scoped commands
 
 For commands that only make sense on a specific route, register them

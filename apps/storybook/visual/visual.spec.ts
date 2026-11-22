@@ -70,9 +70,14 @@ test('every story matches its baseline screenshot', async ({ page, request }) =>
 			continue;
 		}
 
-		await expect.soft(root).toHaveScreenshot(`${storyId}.png`, {
-			animations: 'disabled',
-		});
+		// A modal <dialog> paints in the top layer, outside #storybook-root's box, so a
+		// crop of the root would miss it; those stories are compared on the viewport.
+		const screenshotOptions = { animations: 'disabled' } as const;
+		if ((await root.locator('dialog[open]').count()) > 0) {
+			await expect.soft(page).toHaveScreenshot(`${storyId}.png`, screenshotOptions);
+		} else {
+			await expect.soft(root).toHaveScreenshot(`${storyId}.png`, screenshotOptions);
+		}
 	}
 
 	if (skipped.length > 0) {

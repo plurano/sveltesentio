@@ -89,4 +89,28 @@ describe('<Dialog>', () => {
 		const dialog = within(container).getByRole('dialog');
 		await expectNoAxeViolations(dialog);
 	});
+
+	it('renders a native DIALOG element with the open attribute while open', () => {
+		const { container } = render(Dialog, { open: true, title: 'Hi' });
+		const native = container.querySelector('dialog');
+		expect(native).not.toBeNull();
+		expect(native?.tagName).toBe('DIALOG');
+		expect(native).toHaveAttribute('open');
+	});
+
+	it('keeps the dialog open when cancel fires and dismissible=false (negative)', () => {
+		render(DialogHarness, { open: true, dismissible: false });
+		const dialog = screen.getByRole('dialog');
+		const event = new Event('cancel', { bubbles: false, cancelable: true });
+		dialog.dispatchEvent(event);
+		expect(event.defaultPrevented).toBe(true);
+		expect(screen.getByRole('dialog')).toBeInTheDocument();
+	});
+
+	it('closes when cancel fires and dismissible=true', async () => {
+		render(DialogHarness, { open: true, dismissible: true });
+		const dialog = screen.getByRole('dialog');
+		dialog.dispatchEvent(new Event('cancel', { bubbles: false, cancelable: true }));
+		await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+	});
 });

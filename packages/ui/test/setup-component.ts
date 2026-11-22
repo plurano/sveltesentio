@@ -13,6 +13,8 @@
 //      reading an opt-in `__stubClientHeight` / `__stubClientWidth` instance
 //      field — see `resize-observer-stub.setClientHeight`.
 import '@testing-library/jest-dom/vitest';
+import { installDialogStub } from './dialog-stub.js';
 import { installResizeObserverStub } from './resize-observer-stub.js';
 
+installDialogStub();
 installResizeObserverStub();
