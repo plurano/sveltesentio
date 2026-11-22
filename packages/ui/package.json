@@ -195,7 +195,7 @@
 	"repository": {
 		"directory": "packages/ui",
 		"type": "git",
-		"url": "git+https://github.com/golusoris/sveltesentio.git"
+		"url": "git+https://github.com/plurano/sveltesentio.git"
 	},
 	"scripts": {
 		"build": "tsc",

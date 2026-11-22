@@ -4,7 +4,7 @@
 	"license": "EUPL-1.2",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/golusoris/sveltesentio.git"
+		"url": "git+https://github.com/plurano/sveltesentio.git"
 	},
 	"type": "module",
 	"scripts": {
