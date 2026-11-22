@@ -1,6 +1,6 @@
 # ADR-0053: Repository namespace = `golusoris/sveltesentio`; npm scope = `@sveltesentio/*`
 
-- **Status**: Accepted
+- **Status**: Superseded by [ADR-0060](0060-repository-namespace-plurano.md)
 - **Date**: 2026-04-18
 - **Deciders**: @lusoris (user)
 - **D-row**: D1 + D2 in `.workingdir/research/decisions-needed.md`
