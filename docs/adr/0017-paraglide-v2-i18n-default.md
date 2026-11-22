@@ -1,6 +1,6 @@
 # ADR-0017: Paraglide v2 as framework i18n default
 
-- **Status**: Accepted
+- **Status**: Superseded by [ADR-0059](0059-paraglide-3-i18n-default.md)
 - **Date**: 2026-04-17
 - **Deciders**: @lusoris (user), research agent
 - **D-row**: D50 in `.workingdir/research/decisions-needed.md`

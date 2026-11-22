@@ -1,12 +1,12 @@
 # @sveltesentio/i18n — AGENTS.md
 
-> Paraglide v2 wrapper with a11y + RTL + direction-sync baked in. Phase 6 per `.workingdir/PLAN.md`.
+> Paraglide 3 wrapper with a11y + RTL + direction-sync baked in. Phase 6 per `.workingdir/PLAN.md`.
 
 ## Scope
 
-Thin wrapper over `@inlang/paraglide-js@^2.16.0` (ADR-0017).
-Deprecated `@inlang/paraglide-sveltekit` adapter not used.
-Paraglide v2 integrates via framework-agnostic `paraglideVitePlugin()` exported from `@inlang/paraglide-js` directly.
+Thin wrapper over `@inlang/paraglide-js` (`^3` test matrix, peer `>=2.0.0`; [ADR-0059](../../docs/adr/0059-paraglide-3-i18n-default.md)).
+Deprecated `@inlang/paraglide-sveltekit` adapter not used ([ADR-0017](../../docs/adr/0017-paraglide-v2-i18n-default.md)).
+Paraglide 3 integrates via framework-agnostic `paraglideVitePlugin()` exported from `@inlang/paraglide-js` directly.
 
 ### Landed (v0.0.1)
 
@@ -65,7 +65,7 @@ paraglideVitePlugin({
 
 ## Invariants
 
-- **Paraglide v2 only** — v1 integration patterns (adapter, context.json) obsolete.
+- **Paraglide 3 default (`>=2.0.0` peer floor)** — v1 integration patterns (adapter, context.json) obsolete ([ADR-0017](../../docs/adr/0017-paraglide-v2-i18n-default.md), [ADR-0059](../../docs/adr/0059-paraglide-3-i18n-default.md)).
 - **Never re-implement Intl.** Currency / number / date go through `Intl.*` passthroughs.
 - **Messages compiled, not loaded.** No runtime JSON fetches; tree-shaken per-locale bundles.
 
@@ -99,6 +99,7 @@ paraglideVitePlugin({
 
 ## Related ADRs
 
-- [ADR-0017](../../docs/adr/0017-paraglide-v2-i18n-default.md) — Paraglide v2 as default.
+- [ADR-0059](../../docs/adr/0059-paraglide-3-i18n-default.md) — Paraglide 3 (`^3` test matrix, peer `>=2.0.0`) as default; supersedes ADR-0017.
+- [ADR-0017](../../docs/adr/0017-paraglide-v2-i18n-default.md) — initial Paraglide default and `@inlang/paraglide-sveltekit` adapter removal (superseded by ADR-0059).
 - [ADR-0018](../../docs/adr/0018-i18n-thin-wrapper.md) — keep thin wrapper + 6 a11y action items.
 - [ADR-0040](../../docs/adr/0040-paraglide-strategy-logical-properties.md) — strategy + RTL + logical properties.

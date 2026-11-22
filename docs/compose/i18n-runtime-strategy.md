@@ -1,7 +1,8 @@
-# i18n — Paraglide v2 runtime strategy
+# i18n — Paraglide 3 runtime strategy
 
-`@sveltesentio/i18n` re-exports Paraglide v2 per
-[ADR-0017](../adr/0017-paraglide-v2-i18n-default.md). This recipe
+`@sveltesentio/i18n` integrates with Paraglide 3 (`@inlang/paraglide-js`,
+peer floor `>=2.0.0`) per
+[ADR-0059](../adr/0059-paraglide-3-i18n-default.md). This recipe
 focuses on the **runtime strategy chain** — how Paraglide picks the
 active locale per request, which sources it consults, and the
 trade-offs of each ordering. The basic setup (`paraglideVitePlugin()`,
@@ -92,7 +93,7 @@ import { deLocalizeUrl } from '#lib/paraglide/runtime.js';
 export const reroute = ({ url }) => deLocalizeUrl(url).pathname;
 ```
 
-This is the key Paraglide v2 boundary — `deLocalizeUrl` strips the
+This is the key Paraglide 3 boundary — `deLocalizeUrl` strips the
 locale prefix so every route handler writes locale-free paths
 (`/flows/[id]`) and Paraglide injects `/de` on `<a>` href
 generation.
@@ -208,7 +209,7 @@ build` → per-locale chunks with tree-shaking. Consequence:
 
 Trade-off vs runtime i18n (svelte-i18n, typesafe-i18n runtime):
 
-|                       | Paraglide v2     | Runtime i18n       |
+|                       | Paraglide 3      | Runtime i18n       |
 | --------------------- | ---------------- | ------------------ |
 | Bundle size           | ~70% smaller     | Full catalog ships |
 | Live updates          | Rebuild required | Hot-swap           |
@@ -216,7 +217,7 @@ Trade-off vs runtime i18n (svelte-i18n, typesafe-i18n runtime):
 | SSR HTML              | Pre-rendered     | Runtime-resolved   |
 | Translation platform  | Push-to-git      | API-driven         |
 
-Sveltesentio picks compile-time (ADR-0017). If you need live updates,
+Sveltesentio picks compile-time (ADR-0059). If you need live updates,
 document the deploy-on-translate cadence upfront.
 
 ## ICU plurals + complex messages
@@ -325,6 +326,32 @@ carry over.
 arca is the reference integration (see
 `golusoris/app-arca/src/lib/paraglide/`).
 
+## Upgrading from Paraglide 2
+
+- Paraglide 3 removes the `additionalFiles` compiler option
+  (configurations passing it fail with migration guidance). The CLI
+  now emits TypeScript declarations by default; the programmatic
+  compiler keeps `emitTsDeclarations: false`.
+- Paraglide 3 removes `experimentalMiddlewareLocaleSplitting` and the
+  runtime `trackMessageCall` export. The experimental
+  `experimentalPerLocaleBuild: true` option (Vite 8 or newer) builds one
+  client environment per locale and needs full-document navigation on a
+  locale change; upstream states that framework SSR graph selection
+  requires a public framework integration API. It is therefore not a
+  drop-in replacement for the removed option in a SvelteKit application.
+- The Vite integration defaults to
+  `outputStructure: 'virtual-modules'` in development and production —
+  keeping public runtime and message entry points on disk while
+  serving message implementations virtually through
+  `paraglideVitePlugin()` — so standalone Node scripts or
+  grouped-output builds must select `'message-modules'` or
+  `'locale-modules'`. In this mode the plugin emits TypeScript
+  declarations and refuses `emitTsDeclarations: false`.
+- The Vitest example under [Testing](#testing) needs
+  `paraglideVitePlugin()` in the config Vitest loads: `vite.config.ts`,
+  or a `vitest.config.ts` that merges it with `mergeConfig`. A test
+  runner without Vite needs a physical `outputStructure`.
+
 ## Anti-patterns
 
 - **`['cookie', 'url', …]` order.** Sharing-breaks per above.
@@ -338,17 +365,17 @@ arca is the reference integration (see
   compile-time. Schedule deploys.
 - **Probing IP geo for locale.** Locale ≠ country. Use browser
   Accept-Language.
-- **Shipping `@inlang/paraglide-sveltekit` on v2.** Deprecated.
-  Remove.
+- **Shipping `@inlang/paraglide-sveltekit`.** Deprecated since
+  Paraglide 2. Remove.
 - **`Vary: *`.** Kills all CDN caching. Be surgical: `Accept-Language,
 Cookie` only if both strategies are active.
 
 ## References
 
-- ADR-0017 — Paraglide v2 as default.
+- [ADR-0059](../adr/0059-paraglide-3-i18n-default.md) — Paraglide 3 as default (supersedes [ADR-0017](../adr/0017-paraglide-v2-i18n-default.md)).
 - ADR-0040 — logical-properties RTL posture.
 - ADR-0018 — `@sveltesentio/i18n` wrapper.
 - [theming.md](theming.md) — ltr/rtl CSS.
 - [safe-area.md](safe-area.md) — `ps-*` / `pe-*` safe-area variants.
-- Paraglide v2 docs: <https://inlang.com/m/gerre34r/library-inlang-paraglideJs>.
+- Paraglide 3 docs: <https://paraglidejs.com>.
 - SvelteKit hreflang guide: <https://kit.svelte.dev/docs/seo#manual-setup-lang>.
