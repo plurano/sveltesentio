@@ -83,7 +83,7 @@ describe('SseClient', () => {
 		});
 	});
 
-	it('reconnects with exponential backoff after an error', () => {
+	it('reconnects with exponential backoff after an error', async () => {
 		const errors: unknown[] = [];
 		const client = new SseClient({
 			url: '/stream',
@@ -97,11 +97,11 @@ describe('SseClient', () => {
 		expect(errors.length).toBe(1);
 		expect(FakeEventSource.instances[0]?.closed).toBe(true);
 
-		vi.advanceTimersByTime(2000);
+		await vi.advanceTimersByTimeAsync(2000);
 		expect(FakeEventSource.instances.length).toBe(2);
 	});
 
-	it('resets the attempt counter after a successful open', () => {
+	it('resets the attempt counter after a successful open', async () => {
 		const client = new SseClient({
 			url: '/stream',
 			backoff: { minMs: 500, maxMs: 10_000, jitter: 0, random: () => 0.5 },
@@ -110,12 +110,12 @@ describe('SseClient', () => {
 		client.start();
 		FakeEventSource.instances[0]!.emit('error', new Error('one'));
 		expect(client.currentAttempt).toBe(1);
-		vi.advanceTimersByTime(1000);
+		await vi.advanceTimersByTimeAsync(1000);
 		FakeEventSource.instances[1]!.emit('open');
 		expect(client.currentAttempt).toBe(0);
 	});
 
-	it('close() stops all activity + transitions to closed', () => {
+	it('close() stops all activity + transitions to closed', async () => {
 		const client = new SseClient({
 			url: '/stream',
 			backoff: { minMs: 500, maxMs: 10_000, jitter: 0, random: () => 0.5 },
@@ -124,7 +124,7 @@ describe('SseClient', () => {
 		client.start();
 		FakeEventSource.instances[0]!.emit('error', new Error('err'));
 		client.close();
-		vi.advanceTimersByTime(5000);
+		await vi.advanceTimersByTimeAsync(5000);
 		expect(FakeEventSource.instances.length).toBe(1);
 		expect(client.currentState).toBe('closed');
 	});
@@ -244,7 +244,7 @@ describe('SseClient', () => {
 		expect(onMessage).not.toHaveBeenCalled();
 	});
 
-	it('preserves named listener on the new source and removes it from the old source after error+reconnect', () => {
+	it('preserves named listener on the new source and removes it from the old source after error+reconnect', async () => {
 		const onMessage = vi.fn();
 		const client = new SseClient({
 			url: '/stream',
@@ -260,7 +260,7 @@ describe('SseClient', () => {
 		first.emit('error', new Error('reconnect'));
 		expect(first.listenerCount('search_dispatched')).toBe(0);
 
-		vi.advanceTimersByTime(1000);
+		await vi.advanceTimersByTimeAsync(1000);
 		expect(FakeEventSource.instances.length).toBe(2);
 		const second = FakeEventSource.instances[1]!;
 		expect(second.listenerCount('search_dispatched')).toBe(1);
@@ -275,7 +275,7 @@ describe('SseClient', () => {
 		});
 	});
 
-	it('reconnects with the default timers when they refuse a foreign receiver (#424)', () => {
+	it('reconnects with the default timers when they refuse a foreign receiver (#424)', async () => {
 		const fakeSet = globalThis.setTimeout;
 		const fakeClear = globalThis.clearTimeout;
 		vi.stubGlobal('setTimeout', receiverChecked(fakeSet));
@@ -292,12 +292,12 @@ describe('SseClient', () => {
 			FakeEventSource.instances[0]!.emit('error', new Error('drop'));
 		}).not.toThrow();
 
-		vi.advanceTimersByTime(1000);
+		await vi.advanceTimersByTimeAsync(1000);
 		expect(FakeEventSource.instances.length).toBe(2);
 		expect(client.currentAttempt).toBe(1);
 	});
 
-	it('close() cancels a pending reconnect through the default clearTimeout', () => {
+	it('close() cancels a pending reconnect through the default clearTimeout', async () => {
 		const fakeSet = globalThis.setTimeout;
 		const fakeClear = globalThis.clearTimeout;
 		vi.stubGlobal('setTimeout', receiverChecked(fakeSet));
@@ -314,12 +314,12 @@ describe('SseClient', () => {
 			client.close();
 		}).not.toThrow();
 
-		vi.advanceTimersByTime(60_000);
+		await vi.advanceTimersByTimeAsync(60_000);
 		expect(FakeEventSource.instances.length).toBe(1);
 		expect(client.currentState).toBe('closed');
 	});
 
-	it('close() from onStateChange during a reconnect leaves no retry armed', () => {
+	it('close() from onStateChange during a reconnect leaves no retry armed', async () => {
 		const client: SseClient = new SseClient({
 			url: '/stream',
 			backoff: { minMs: 500, maxMs: 10_000, jitter: 0, random: () => 0.5 },
@@ -332,13 +332,13 @@ describe('SseClient', () => {
 		FakeEventSource.instances[0]!.emit('open');
 		FakeEventSource.instances[0]!.emit('error', new Error('drop'));
 
-		vi.advanceTimersByTime(60_000);
+		await vi.advanceTimersByTimeAsync(60_000);
 		expect(FakeEventSource.instances.length).toBe(1);
 		expect(client.currentState).toBe('closed');
 		expect(vi.getTimerCount()).toBe(0);
 	});
 
-	it('close() from onError leaves no retry armed', () => {
+	it('close() from onError leaves no retry armed', async () => {
 		const client: SseClient = new SseClient({
 			url: '/stream',
 			backoff: { minMs: 500, maxMs: 10_000, jitter: 0, random: () => 0.5 },
@@ -353,7 +353,7 @@ describe('SseClient', () => {
 
 		expect(client.currentState).toBe('closed');
 		expect(vi.getTimerCount()).toBe(0);
-		vi.advanceTimersByTime(60_000);
+		await vi.advanceTimersByTimeAsync(60_000);
 		expect(FakeEventSource.instances.length).toBe(1);
 		expect(client.currentState).toBe('closed');
 	});

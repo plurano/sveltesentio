@@ -11,7 +11,7 @@ afterEach(() => {
 });
 
 describe('createReconnectScheduler', () => {
-	it('calls the default timers without a foreign receiver', () => {
+	it('calls the default timers without a foreign receiver', async () => {
 		const fakeSet = globalThis.setTimeout;
 		const fakeClear = globalThis.clearTimeout;
 		vi.stubGlobal('setTimeout', receiverChecked(fakeSet));
@@ -26,14 +26,14 @@ describe('createReconnectScheduler', () => {
 		expect(() => {
 			delay = scheduler.schedule(run);
 		}).not.toThrow();
-		vi.advanceTimersByTime(delay);
+		await vi.advanceTimersByTimeAsync(delay);
 		expect(run).toHaveBeenCalledTimes(1);
 
 		scheduler.schedule(run);
 		expect(() => {
 			scheduler.clear();
 		}).not.toThrow();
-		vi.advanceTimersByTime(60_000);
+		await vi.advanceTimersByTimeAsync(60_000);
 		expect(run).toHaveBeenCalledTimes(1);
 	});
 
