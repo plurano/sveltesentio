@@ -1,7 +1,7 @@
 # Contributing to sveltesentio
 
 Thanks for considering a contribution. sveltesentio is the SvelteKit analog to
-[golusoris/golusoris](https://github.com/golusoris/golusoris) — same discipline,
+[plurano/golusoris](https://github.com/plurano/golusoris) — same discipline,
 same governance surface, same quality bar. Read this document before opening a PR.
 
 ## Before you start
@@ -206,7 +206,7 @@ the same migration-footer discipline.
 Every release ships a SLSA Build Level 2 provenance attestation and comes from
 a `pnpm audit`-clean dependency tree. Level 3 provenance, cosign signing, npm
 provenance and an SBOM attached to the release are open
-([#280](https://github.com/golusoris/sveltesentio/issues/280)); see
+([#280](https://github.com/plurano/sveltesentio/issues/280)); see
 [SECURITY.md](SECURITY.md) for the measured state.
 
 ## Getting help

@@ -2,7 +2,7 @@
 
 > Thin LayerChart wrappers with a WCAG 2.2 AA accessibility envelope
 
-Part of the [sveltesentio](https://github.com/golusoris/sveltesentio) composable SvelteKit framework.
+Part of the [sveltesentio](https://github.com/plurano/sveltesentio) composable SvelteKit framework.
 
 ## Status
 

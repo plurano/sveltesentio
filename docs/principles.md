@@ -118,14 +118,14 @@ Rules:
 
 ## §2.5 Supply chain
 
-| Standard       | Rule                                                                                                                                                                                                                                                                            |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| SLSA           | Build Level 2 today: provenance attestation on every release via `actions/attest-build-provenance` in the release job. Level 3 is declared and open ([#280](https://github.com/golusoris/sveltesentio/issues/280)); exception `HISS-11` in `.standards.yaml` expires 2027-01-09 |
-| SBOM           | CycloneDX SBOM generated on release as a workflow artifact; attaching it to the release is open (#280)                                                                                                                                                                          |
-| Cosign         | Declared, not in place: no release step signs with cosign yet (#280, same exception)                                                                                                                                                                                            |
-| Dependabot     | Weekly updates for npm + GitHub Actions, grouped by ecosystem                                                                                                                                                                                                                   |
-| Audit          | `pnpm audit --audit-level=high` must pass on every merge                                                                                                                                                                                                                        |
-| Pinned actions | All GitHub Action `uses:` pinned to commit SHA, not tag                                                                                                                                                                                                                         |
+| Standard       | Rule                                                                                                                                                                                                                                                                          |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SLSA           | Build Level 2 today: provenance attestation on every release via `actions/attest-build-provenance` in the release job. Level 3 is declared and open ([#280](https://github.com/plurano/sveltesentio/issues/280)); exception `HISS-11` in `.standards.yaml` expires 2027-01-09 |
+| SBOM           | CycloneDX SBOM generated on release as a workflow artifact; attaching it to the release is open (#280)                                                                                                                                                                        |
+| Cosign         | Declared, not in place: no release step signs with cosign yet (#280, same exception)                                                                                                                                                                                          |
+| Dependabot     | Weekly updates for npm + GitHub Actions, grouped by ecosystem                                                                                                                                                                                                                 |
+| Audit          | `pnpm audit --audit-level=high` must pass on every merge                                                                                                                                                                                                                      |
+| Pinned actions | All GitHub Action `uses:` pinned to commit SHA, not tag                                                                                                                                                                                                                       |
 
 ---
 
@@ -150,13 +150,13 @@ Rules:
 
 ## §2.8 Testing
 
-| Layer             | Tool                             | Threshold                                                                                                |
-| ----------------- | -------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| Unit              | Vitest                           | 70% line coverage (85% auth/forms packages)                                                              |
-| Component         | @testing-library/svelte + Vitest | —                                                                                                        |
-| a11y              | axe-core + @axe-core/playwright  | 0 violations                                                                                             |
-| E2E               | Playwright                       | Critical user paths                                                                                      |
-| Visual regression | Playwright screenshots           | Per-component baseline, gated via CI Gate ([#325](https://github.com/golusoris/sveltesentio/issues/325)) |
+| Layer             | Tool                             | Threshold                                                                                              |
+| ----------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Unit              | Vitest                           | 70% line coverage (85% auth/forms packages)                                                            |
+| Component         | @testing-library/svelte + Vitest | —                                                                                                      |
+| a11y              | axe-core + @axe-core/playwright  | 0 violations                                                                                           |
+| E2E               | Playwright                       | Critical user paths                                                                                    |
+| Visual regression | Playwright screenshots           | Per-component baseline, gated via CI Gate ([#325](https://github.com/plurano/sveltesentio/issues/325)) |
 
 Rules:
 
@@ -176,8 +176,8 @@ Rules:
 | LCP                      | < 2.5s                      | Playwright + web-vitals in the auth, media and shell end-to-end suites (`tools/e2e-vitals/web-vitals.ts`); Lighthouse over the production build of the media harness (`packages/media/e2e/lighthouse.spec.ts`) |
 | INP                      | < 200ms                     | Playwright + web-vitals in the auth, media and shell end-to-end suites (`tools/e2e-vitals/web-vitals.ts`)                                                                                                      |
 | CLS                      | < 0.1                       | Playwright + web-vitals in the auth, media and shell end-to-end suites (`tools/e2e-vitals/web-vitals.ts`)                                                                                                      |
-| Bundle size (initial JS) | < 150kb gzipped             | rollup-plugin-visualizer (target, not gated yet: [#326](https://github.com/golusoris/sveltesentio/issues/326))                                                                                                 |
-| Images                   | WebP/AVIF only, lazy-loaded | eslint-plugin-svelte custom rule (target, not gated yet: [#327](https://github.com/golusoris/sveltesentio/issues/327))                                                                                         |
+| Bundle size (initial JS) | < 150kb gzipped             | rollup-plugin-visualizer (target, not gated yet: [#326](https://github.com/plurano/sveltesentio/issues/326))                                                                                                   |
+| Images                   | WebP/AVIF only, lazy-loaded | eslint-plugin-svelte custom rule (target, not gated yet: [#327](https://github.com/plurano/sveltesentio/issues/327))                                                                                           |
 
 Every end-to-end test fails when a metric its engine can measure reports no value or a value over the budget. Which metrics an engine measures follows from the performance entry types it supports (`PerformanceObserver.supportedEntryTypes`): Chromium all five, Firefox all but CLS. INP needs an interaction, so it is checked only in tests that interact. TTFB and FCP use the "good" thresholds web-vitals ships.
 

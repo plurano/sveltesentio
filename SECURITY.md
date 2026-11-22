@@ -29,11 +29,11 @@ Verify a file of a published package against its attestation:
 
 ```bash
 # From a checkout of the release tag, for example core-v0.3.0:
-gh attestation verify packages/core/src/index.ts --repo golusoris/sveltesentio
+gh attestation verify packages/core/src/index.ts --repo plurano/sveltesentio
 ```
 
 Not in place yet, tracked in
-[#280](https://github.com/golusoris/sveltesentio/issues/280):
+[#280](https://github.com/plurano/sveltesentio/issues/280):
 
 - **SLSA Build Level 3.** The standards manifest declares it. The attestation
   is signed in the job that builds and publishes, which is Level 2. A dated

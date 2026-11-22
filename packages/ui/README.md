@@ -2,7 +2,7 @@
 
 > shadcn-svelte presets, Tailwind 4 design tokens, per-interface-type themes
 
-Part of the [sveltesentio](https://github.com/golusoris/sveltesentio) composable SvelteKit framework.
+Part of the [sveltesentio](https://github.com/plurano/sveltesentio) composable SvelteKit framework.
 
 ## Status
 

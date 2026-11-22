@@ -4,7 +4,7 @@
 
 ## Why C4 (not UML / arc42 / ad-hoc)
 
-Same rationale as `golusoris/golusoris/docs/architecture/README.md` — sveltesentio mirrors golusoris's architecture-documentation standard:
+Same rationale as `plurano/golusoris/docs/architecture/README.md` — sveltesentio mirrors golusoris's architecture-documentation standard:
 
 - **Four levels** (Context → Container → Component → Code) matches how engineers actually think about systems — zoom in only where you need detail.
 - **Plain text source** (PlantUML) means diff-friendly, code-review-friendly, no proprietary editor lock-in.

@@ -2,7 +2,7 @@
 
 > Typed openapi-fetch client wired with core's RFC 9457 `problemMiddleware`
 
-Part of the [sveltesentio](https://github.com/golusoris/sveltesentio) composable SvelteKit framework.
+Part of the [sveltesentio](https://github.com/plurano/sveltesentio) composable SvelteKit framework.
 
 ## Status
 

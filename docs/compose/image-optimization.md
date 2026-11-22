@@ -377,7 +377,7 @@ Four lanes:
    over the wire. The repository runs this check on its media harness
    (`packages/media/e2e/lighthouse.spec.ts`); an app copies it for its own
    pages. AVIF delivery when supported is a target, not gated yet:
-   [#324](https://github.com/golusoris/sveltesentio/issues/324).
+   [#324](https://github.com/plurano/sveltesentio/issues/324).
 
 ## Anti-patterns
 

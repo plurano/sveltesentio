@@ -2,7 +2,7 @@
 
 > SvelteKit auth patterns — session hooks, CSRF protection, role guards
 
-Part of the [sveltesentio](https://github.com/golusoris/sveltesentio) composable SvelteKit framework.
+Part of the [sveltesentio](https://github.com/plurano/sveltesentio) composable SvelteKit framework.
 
 ## Status
 

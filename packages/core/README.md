@@ -2,7 +2,7 @@
 
 > Core utilities — rune helpers, type-safe fetch, CSP hooks, error boundaries
 
-Part of the [sveltesentio](https://github.com/golusoris/sveltesentio) composable SvelteKit framework.
+Part of the [sveltesentio](https://github.com/plurano/sveltesentio) composable SvelteKit framework.
 
 ## Status
 
@@ -53,7 +53,7 @@ not interchangeable:
 `./vite` budgets are opt-in, and no build in this repository sets
 `bundleBudget`, so the §2.9 initial-JS budget in
 [`docs/principles.md`](../../docs/principles.md) is not gated yet
-([#326](https://github.com/golusoris/sveltesentio/issues/326)). In
+([#326](https://github.com/plurano/sveltesentio/issues/326)). In
 [`src/vite.ts`](src/vite.ts), the check runs in the plugin's `generateBundle`
 hook and covers each chunk and asset already in the bundle whose `fileName`
 equals a key, and the size checked is the raw byte length, not the gzipped size

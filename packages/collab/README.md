@@ -98,7 +98,7 @@ That holds for these callers and dependencies (tests in [`test/provider-auth.tes
 - a getter on the binding slot that throws while a dial is planned ("refuses the dial when reading the binding slot throws");
 - a second loaded copy of this package, which meets the first on the `Symbol.for` keys `@sveltesentio/collab/activeBinding@1` and `@sveltesentio/collab/bindingState@1`.
 
-Out of scope: a caller that sabotages its own provider's `_WS` or active-binding slot with accessors or proxy traps built to defeat the binding's read-back. Examples: a `_WS` setter that stores a constructor other than the one written; a slot setter that fails the rollback's write and then takes the next rebind's, so that rebind wraps the closed earlier binding; a foreign value such as `NaN` written into the slot. Such a provider may dial without the token or refuse every dial. Issue [#592](https://github.com/golusoris/sveltesentio/issues/592) tracks hardening against these shapes.
+Out of scope: a caller that sabotages its own provider's `_WS` or active-binding slot with accessors or proxy traps built to defeat the binding's read-back. Examples: a `_WS` setter that stores a constructor other than the one written; a slot setter that fails the rollback's write and then takes the next rebind's, so that rebind wraps the closed earlier binding; a foreign value such as `NaN` written into the slot. Such a provider may dial without the token or refuse every dial. Issue [#592](https://github.com/plurano/sveltesentio/issues/592) tracks hardening against these shapes.
 
 ## Related ADRs
 

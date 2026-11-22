@@ -25,7 +25,7 @@ own release job differs from it:
   and generates one CycloneDX SBOM per run as a workflow artifact.
 - Not in place: an SBOM attached to the release, an SBOM attestation, cosign
   signatures, a verifiable npm provenance attestation. All four are tracked in
-  [#280](https://github.com/golusoris/sveltesentio/issues/280).
+  [#280](https://github.com/plurano/sveltesentio/issues/280).
 - 19 packages are published, not the 12 named above.
 
 ## Related
