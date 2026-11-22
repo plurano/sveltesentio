@@ -55,7 +55,8 @@ Three transports, three hooks — unifying abstraction rejected as leaky (D73 lo
 
 ## Test policy
 
-- `SseClient` unit tests inject `FakeEventSource` via `eventSourceFactory` — no mocking native browser impl. 16 tests cover: connect/open transition, message normalisation, exponential reconnect, attempt-counter reset on successful open, `close()` stops reconnects, missing-global-EventSource error path.
+- `SseClient` unit tests inject `FakeEventSource` via `eventSourceFactory` — no mocking native browser impl. 17 tests cover: connect/open transition, message normalisation, exponential reconnect, attempt-counter reset on successful open, `close()` stops reconnects, missing-global-EventSource error path, default timers called without a foreign receiver (#424), `close()` from `onStateChange` or `onError` cancels the armed retry.
+- `createReconnectScheduler` unit tests (`test/reconnect-scheduler.test.ts`): 3 tests, receiver-free default timers, attempt/floor boundary, `reset()`.
 - `createConnectStream` unit tests inject manually-driven fake async iterable via `call` seam — no network / grpc. 6 tests cover: open -> message -> close (natural completion), error -> backoff -> reconnect, attempt reset after message, `stop()` cancels active stream + pending reconnect, messages after `stop()` ignored, aborted-stream throw does not reconnect.
 - `.svelte.ts` wrapper (`useConnectStream`) untested at unit layer (runes need Svelte plugin); logic delegated to tested `createConnectStream`. Wrapper must `tsc`/`lint` clean.
 - Reconnect + backoff timing verified with fake timers (Vitest `vi.useFakeTimers()` + `advanceTimersByTimeAsync`).
