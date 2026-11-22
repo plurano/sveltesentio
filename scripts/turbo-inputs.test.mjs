@@ -30,6 +30,7 @@ const READS_OUTSIDE_PACKAGE = {
 		'packages/core/AGENTS.md',
 		'packages/core/package.json',
 	],
+	'@sveltesentio/ui#test': ['docs/compose/toast.md', 'docs/compose/mfa.md'],
 	'@sveltesentio/docs#build': [
 		'docs/principles.md',
 		'docs/adr/README.md',

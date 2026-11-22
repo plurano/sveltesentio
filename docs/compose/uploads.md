@@ -203,7 +203,7 @@ tus expects `PATCH` with `Content-Type: application/offset+octet-stream`
 ```svelte
 <script lang="ts">
   import { uploadFile, UploadRejection } from '#lib/uploads/pipeline.js';
-  import { toast } from '@sveltesentio/ui/toast';
+  import { toast } from 'svelte-sonner';
 
   let progress = $state(0);
   let uploader = $state<tus.Upload | null>(null);

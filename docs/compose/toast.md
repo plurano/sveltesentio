@@ -1,243 +1,313 @@
-# Toast — `@sveltesentio/ui/toast` (svelte-sonner + mode-watcher + presets)
+# Toast — svelte-sonner + `@sveltesentio/ui/toast` preset sizing
 
-`@sveltesentio/ui/toast` is a thin wrapper around `svelte-sonner@^1.1`
-that enforces the **preset-aware sizing** invariant: padding, font-size,
-and max-width scale with the active `@sveltesentio/ui/preset-*`
-(`desktop` / `10-foot` / `handheld`). It composes `mode-watcher` for
-theme sync and Lucide icons for loading / success / error / info /
-warning states.
+`@sveltesentio/ui/toast` ships the pure `toastPreset()` sizing helper (plus its TypeScript types `ToastPreset`, `ToastPosition`, and `ToasterPreset`) and nothing else. Your app installs `svelte-sonner`, imports `Toaster` and `toast` from `'svelte-sonner'`, and spreads `<Toaster {...p.toaster} />` so viewport placement, toaster width, stacking gap, padding, font-size, corner radius, and action/cancel button target sizes scale with the active interface preset.
 
-See [ADR-0007](../adr/0007-svelte-sonner-toast-primitive.md) (primitive
-lock) and [ADR-0016](../adr/0016-ui-toast-thin-wrapper-preset-sizing.md)
-(preset-aware wrapper decision). Related:
-[ADR-0047](../adr/0047-per-interface-presets.md) (per-interface
-presets), [ADR-0030](../adr/0030-mode-watcher-pin.md) (mode-watcher).
+See [ADR-0007](../adr/0007-svelte-sonner-toast-primitive.md) (`svelte-sonner` primitive lock) and [ADR-0016](../adr/0016-ui-toast-thin-wrapper-preset-sizing.md) (preset-sizing helper scope and `<Toaster {...p.toaster} />` delivery path). Related: [ADR-0047](../adr/0047-per-interface-presets.md) (per-interface presets), [ADR-0030](../adr/0030-mode-watcher-pin.md) (`mode-watcher` pin), and [`@sveltesentio/ui` README](../../packages/ui/README.md).
 
 ## Install
 
 ```bash
-pnpm add @sveltesentio/ui svelte-sonner mode-watcher
+pnpm add svelte-sonner @sveltesentio/ui
+# Optional dark-mode sync via mode-watcher:
+pnpm add mode-watcher
 ```
 
-Peer range: `svelte-sonner@^1.1`, `mode-watcher@^1`, `svelte@^5`.
-Lucide icons come in via `@sveltesentio/ui` (ADR-0002 default).
+`@sveltesentio/ui` declares `svelte-sonner` (`>=1.0.0 <2`) and `mode-watcher` (`>=1.1.0 <2`) as optional peers alongside `svelte` (`>=5.56.4`). Install `svelte-sonner` `>=1.2.0` (`1.2.1` in workspace) so expanded toast stacks read the preset `gap` prop rather than `svelte-sonner`'s legacy `14px` constant.
 
 ## Mount once
 
-One `<Toaster>` per app, at the root layout — same contract as sonner
-upstream:
+Mount a single `<Toaster>` in your root `src/routes/+layout.svelte` and spread `p.toaster` from `toastPreset()`. Pass the same `InterfaceType` (`'desktop' | 'dashboard' | '10foot' | 'handheld'`) or `InterfacePreset` object from `@sveltesentio/ui/presets` that your app passes to `presetCss(preset, selector?)` or stamps onto `[data-interface="<name>"]`:
 
 ```svelte
 <!-- src/routes/+layout.svelte -->
 <script lang="ts">
-  import { Toaster } from '@sveltesentio/ui/toast';
-  let { children } = $props();
+  import { Toaster } from 'svelte-sonner';
+  import type { InterfaceType } from '@sveltesentio/ui/presets';
+  import { toastPreset } from '@sveltesentio/ui/toast';
+  import type { LayoutProps } from './$types';
+
+  let { children, data }: LayoutProps = $props();
+
+  const interfaceType = $derived<InterfaceType>(data.interfaceType ?? 'desktop');
+  const p = $derived(toastPreset(interfaceType));
 </script>
 
-{@render children()}
+<div data-interface={interfaceType}>
+  {@render children()}
+</div>
 
-<Toaster />
+<Toaster {...p.toaster} />
 ```
 
-`<Toaster>` reads the active preset from
-`:root[data-preset]` (set by `withPreset()` in `hooks.server.ts`) and
-applies the matching size tokens. No config needed for defaults.
+`data.interfaceType` is a value the app's root `+layout.ts` or `+layout.server.ts` `load` returns (typed `InterfaceType`), the same value it puts on `data-interface`; `@sveltesentio/ui` does not classify the device.
 
-### Props
+`toastPreset()` accepts either an `InterfaceType` name or a full `InterfacePreset` object, so a single-interface app can pass the same preset constant to both `presetCss()` (which scopes `--ui-*` custom properties to `[data-interface="<name>"]` by default) and `toastPreset()`:
 
 ```ts
-type ToasterProps = {
-  position?:
-    'top-left' | 'top-right' | 'top-center' | 'bottom-left' | 'bottom-right' | 'bottom-center';
-  richColors?: boolean; // default true — status-tinted bg per type
-  closeButton?: boolean; // default true
-  expand?: boolean; // default false — stack vs expand on hover
-  duration?: number; // default 4000ms
-  gap?: number; // default 12px (desktop) / 16px (handheld) / 24px (10-foot)
-};
+import { presetHandheld, presetCss } from '@sveltesentio/ui/presets';
+import { toastPreset } from '@sveltesentio/ui/toast';
+
+const css = presetCss(presetHandheld);
+const p = toastPreset(presetHandheld);
 ```
 
-The defaults differ per preset — handheld gets larger tap targets, 10-foot
-gets larger gap for cross-room legibility. Override explicitly only if
-you need to.
+`svelte-sonner` 1.2.1 defaults on `<Toaster>` are `duration: 4000`, `closeButton: false`, `richColors: false`, `theme: 'light'`, and `containerAriaLabel: 'Notifications'`. Pass app-level props such as `richColors` or `closeButton` alongside `{...p.toaster}` without replacing `p.toaster.style` or `p.toaster.toastOptions`.
 
 ## Fire a toast
 
+Import `toast` directly from `'svelte-sonner'` (`svelte-sonner` also exports `Toaster`, `useSonner`, `Icon`, `Loader`, and types `ToastT`, `ExternalToast`, `ToasterProps`, `ToastOptions`). Pass the `id` returned by `toast.loading()` to `toast.success()` or `toast.error()` to update the existing toast in place (suits short work; for longer work of unknown duration, see `toast.promise()` below):
+
 ```svelte
 <script lang="ts">
-  import { toast } from '@sveltesentio/ui/toast';
+  import { toast } from 'svelte-sonner';
+  import { api } from '#lib/api/client.js';
+
+  let saving = $state(false);
 
   async function save() {
-    const id = toast.loading('Saving…');
+    saving = true;
+    const id = toast.loading('Saving...');
     try {
-      await api.PUT('/flow', { body: {/* … */} });
+      const { error } = await api.PUT('/v1/flow', { body: { enabled: true } });
+      if (error) throw error;
       toast.success('Saved', { id });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Save failed', { id });
+    } catch {
+      toast.error('Save failed', { id });
+    } finally {
+      saving = false;
     }
   }
 </script>
 
-<button onclick={save}>Save</button>
+<button type="button" disabled={saving} onclick={save}>Save</button>
 ```
 
-Passing the `id` returned from `toast.loading` updates the same toast
-in-place — no stacked "Saving… / Saved" pair. This is the pattern sonner
-upstream recommends; the wrapper preserves it.
-
-### API
+`svelte-sonner` provides typed variants and `toast.promise()` for async lifecycles:
 
 ```ts
-toast(message: string, opts?: ToastOptions): string; // returns id
-toast.success(message: string, opts?: ToastOptions): string;
-toast.error(message: string, opts?: ToastOptions): string;
-toast.info(message: string, opts?: ToastOptions): string;
-toast.warning(message: string, opts?: ToastOptions): string;
-toast.loading(message: string, opts?: ToastOptions): string;
-toast.promise<T>(p: Promise<T>, msgs: { loading; success; error }): Promise<T>;
-toast.dismiss(id?: string): void; // omit id to dismiss all
-toast.message(message: string, opts?: ToastOptions): string; // plain, no icon
-```
+import { toast } from 'svelte-sonner';
+import { api } from '#lib/api/client.js';
 
-`toast.promise` is the sugar for the pattern above:
+toast('Changes queued');
+toast.info('Sync started');
+toast.warning('Quota above 80%');
 
-```ts
-toast.promise(api.PUT('/flow', { body }), {
-  loading: 'Saving…',
+toast.promise(api.PUT('/v1/flow', { body: { enabled: true } }), {
+  loading: 'Saving...',
   success: () => 'Saved',
-  error: (e) => (e instanceof Error ? e.message : 'Save failed'),
+  error: () => 'Save failed',
 });
+
+// Pass a toast id to dismiss one toast, or omit id to dismiss all:
+toast.dismiss();
 ```
 
-## Errors + `ProblemError` interop
+Per-toast `ExternalToast` / `ToastOptions` options include `description`, `action`, `cancel`, `important`, `duration`, `richColors`, `closeButton`, and `dismissible`.
 
-When an API call rejects with a `ProblemError` (RFC 9457 — see
-[http-client.md](http-client.md)), pass it directly:
+## Errors + ProblemError
+
+HTTP failures from `@sveltesentio/core/http` arrive as `ProblemError` from `'@sveltesentio/core/problem'` (RFC 9457 — see [http-client.md](http-client.md)), carrying `title`, `detail`, `status`, `type`, `invalidParams`, and `message`, which falls back from `detail` to `title`, then to `Problem: <type> (<status>)`. Narrow with `instanceof ProblemError`: route field-level validation (`invalidParams`) to inline form state via `problemToFieldErrors` from `'@sveltesentio/forms'` ([forms.md](forms.md)), toast non-field `ProblemError` instances with `err.title ?? err.message` and `{ description: err.detail }`, and show a fixed generic message for any other `unknown` value — never pass raw `String(err)` of an untyped catch binding to a toast:
 
 ```ts
-import { problemToMessage } from '@sveltesentio/core/http';
+import { toast } from 'svelte-sonner';
+import { ProblemError } from '@sveltesentio/core/problem';
+import { problemToFieldErrors, type FieldErrors } from '@sveltesentio/forms';
+import { api } from '#lib/api/client.js';
 
-try {
-  await api.POST('/thing', { body });
-} catch (err) {
-  toast.error(problemToMessage(err));
+export async function createFlow(name: string): Promise<FieldErrors | null> {
+  try {
+    const { error } = await api.POST('/v1/flows', { body: { name } });
+    if (error) throw error;
+    toast.success('Flow created');
+    return null;
+  } catch (err: unknown) {
+    if (err instanceof ProblemError) {
+      if (err.invalidParams && err.invalidParams.length > 0) {
+        return problemToFieldErrors(err);
+      }
+      toast.error(err.title ?? err.message, { description: err.detail });
+      return null;
+    }
+    toast.error('Unable to create flow');
+    return null;
+  }
 }
 ```
-
-`problemToMessage` reads `title` when present, falls back to
-`detail`, then `status`. For structured errors (validation, MFA),
-prefer surfacing in-form instead of toasting.
 
 ## Action toasts
 
+Pass `action` and optional `cancel` descriptors when a transient notification offers an immediate follow-up such as undo:
+
 ```ts
-toast('Draft saved', {
-  action: {
-    label: 'Undo',
-    onClick: () => restoreDraft(),
-  },
-});
-```
+import { toast } from 'svelte-sonner';
 
-The action button gets keyboard focus order + ARIA labelling from
-sonner. 10-foot preset renders it larger — consistent with the sizing
-invariant.
-
-## Theming
-
-Colors come from the same oklch tokens as the rest of
-`@sveltesentio/ui` (see [theming.md](theming.md)):
-
-- `success` → `--color-success`
-- `warning` → `--color-warning`
-- `danger` → `--color-danger` (used by `toast.error`)
-- neutral → `--color-bg` / `--color-fg`
-
-Dark mode syncs via `mode-watcher`'s `ModeWatcher` store — no extra
-wiring. `<Toaster>` subscribes internally.
-
-Never hard-code hex/HSL/oklch literals in a custom toast component;
-override tokens at the preset layer instead.
-
-## Preset-aware sizing
-
-The wrapper's core invariant. Behavior per preset:
-
-| Preset              | Padding     | Font-size  | Max-width | Gap    |
-| ------------------- | ----------- | ---------- | --------- | ------ |
-| `desktop` (default) | `12px 16px` | `0.875rem` | `356px`   | `12px` |
-| `handheld`          | `16px 20px` | `1rem`     | `90vw`    | `16px` |
-| `10foot`            | `24px 32px` | `1.5rem`   | `560px`   | `24px` |
-
-These are the wrapper's defaults, applied via
-`:root[data-preset='...']` selectors. Override per-app:
-
-```css
-:root[data-preset='handheld'] [data-sonner-toast] {
-  padding-block: 18px; /* custom for this app */
+export function notifyArchive(restoreDraft: () => void): void {
+  toast('Draft archived', {
+    description: 'Moved to archive.',
+    action: {
+      label: 'Undo',
+      onClick: () => restoreDraft(),
+    },
+    cancel: {
+      label: 'Dismiss',
+      onClick: () => undefined,
+    },
+  });
 }
 ```
 
-Color tokens stay shared across presets — only size scales
-([ADR-0047](../adr/0047-per-interface-presets.md)).
+When `<Toaster {...p.toaster} />` is mounted, `p.toaster.toastOptions.actionButtonStyle` and `p.toaster.toastOptions.cancelButtonStyle` apply `min-height` and `min-width` equal to the preset's `minTargetSize` (`24px` on `desktop` and `dashboard`, `44px` on `10foot` and `handheld`), raising the `24px` button height that `svelte-sonner` sets.
+
+## Theming
+
+`svelte-sonner`'s `<Toaster>` accepts `theme?: 'light' | 'dark' | 'system'` (default `'light'`). `@sveltesentio/ui/toast` ships no theme binding ([ADR-0016](../adr/0016-ui-toast-thin-wrapper-preset-sizing.md)); your app passes `theme` explicitly.
+
+With `mode-watcher` 1.x (`mode.current`, optional peer `>=1.1.0 <2`, [ADR-0030](../adr/0030-mode-watcher-pin.md)):
+
+```svelte
+<script lang="ts">
+  import { mode } from 'mode-watcher';
+  import { Toaster } from 'svelte-sonner';
+  import { toastPreset } from '@sveltesentio/ui/toast';
+
+  const p = toastPreset('desktop');
+</script>
+
+<Toaster {...p.toaster} theme={mode.current ?? 'system'} />
+```
+
+Without `mode-watcher`, pass a `ThemeMode` (`'light' | 'dark' | 'system'`) or a `resolveMode(mode, systemPrefersDark)` result from `@sveltesentio/ui/theme-toggle`:
+
+```svelte
+<script lang="ts">
+  import { Toaster } from 'svelte-sonner';
+  import { resolveMode, type ThemeMode } from '@sveltesentio/ui/theme-toggle';
+  import { toastPreset } from '@sveltesentio/ui/toast';
+
+  let mode = $state<ThemeMode>('system');
+  // Updated by the app's own prefers-color-scheme media query listener:
+  let systemPrefersDark = $state(false);
+
+  const p = toastPreset('desktop');
+  const resolved = $derived(resolveMode(mode, systemPrefersDark));
+</script>
+
+<Toaster {...p.toaster} theme={resolved} />
+```
+
+Keep custom toast surfaces on the semantic oklch token pipeline ([theming.md](theming.md)) — never hard-code hex, RGB, HSL, or raw `oklch()` literals in component styles.
+
+## Preset sizing
+
+`toastPreset(interfaceType)` derives toast geometry from `@sveltesentio/ui/presets` (`spacingScale`, `baseFontSize`, `radius`, `minTargetSize`): padding scales `0.75rem 1rem` by `spacingScale`, viewport `offset` scales `1rem` by `spacingScale`, and `toaster.gap` converts `0.75rem * spacingScale` at `1rem = 16px`.
+
+<!-- toast-preset-table:start -->
+
+| Interface   | position        | width   | offset     | gap (px) | padding              | font-size | radius     | button min size |
+| ----------- | --------------- | ------- | ---------- | -------- | -------------------- | --------- | ---------- | --------------- |
+| `desktop`   | `bottom-right`  | `356px` | `1rem`     | `12`     | `0.75rem 1rem`       | `16px`    | `0.5rem`   | `24px`          |
+| `dashboard` | `bottom-right`  | `320px` | `0.875rem` | `10.5`   | `0.6563rem 0.875rem` | `14px`    | `0.375rem` | `24px`          |
+| `10foot`    | `top-center`    | `40rem` | `1.5rem`   | `18`     | `1.125rem 1.5rem`    | `20px`    | `0.75rem`  | `44px`          |
+| `handheld`  | `bottom-center` | `92vw`  | `1.25rem`  | `15`     | `0.9375rem 1.25rem`  | `17px`    | `0.625rem` | `44px`          |
+
+<!-- toast-preset-table:end -->
+
+What `<Toaster {...p.toaster} />` delivers to the mounted DOM ([ADR-0016](../adr/0016-ui-toast-thin-wrapper-preset-sizing.md)):
+
+- `p.toaster.position` and `p.toaster.offset` set viewport placement and edge inset.
+- `p.toaster.gap` sets `style:--gap` (in CSS `px`) on the toaster `<ol>`. Expanded-stack spacing reads `gap` starting in `svelte-sonner` `1.2.0`; on `1.0.x` and `1.1.x` (still accepted by the `>=1.0.0 <2` optional peer range), expanded offsets stay at `svelte-sonner`'s fixed `14px` ([`@sveltesentio/ui` README](../../packages/ui/README.md)).
+- `p.toaster.style` sets `min-width: min(<width>, 100% - 2 * <offset>);` on every position-group `<ol>` (`[data-sonner-toaster]`) so toasts wider than `svelte-sonner`'s `356px` list default expand cleanly while clamping to the viewport; below `svelte-sonner`'s `600px` mobile breakpoint, mobile `width: 100%` rules remain intact.
+- `p.toaster.toastOptions.style` sets semicolon-terminated `--width: min(<width>, 100%); --border-radius: <radius>; padding: <padding>; font-size: <baseFontSize>;` on each toast `<li>` (`[data-sonner-toast]`).
+- `p.toaster.toastOptions.actionButtonStyle` and `p.toaster.toastOptions.cancelButtonStyle` set `min-height: <minTargetSize>; min-width: <minTargetSize>;` on toast action and cancel buttons.
+- `p.style` on `ToastPreset` is a legacy `Readonly<Record<string, string>>` inspection map retained for append-only compatibility; `svelte-sonner` does not read it.
+- **Known limit**: `dashboard` (`320px`, narrower than `svelte-sonner`'s `356px` `<ol>` default) under a per-toast `*-center` `position` override aligns to the start edge of the `356px` list and sits `18px` off viewport centre ([ADR-0016](../adr/0016-ui-toast-thin-wrapper-preset-sizing.md), amendment 2026-11-21).
 
 ## A11y
 
-`svelte-sonner` announces toasts via `role="status"` (non-urgent) or
-`role="alert"` (errors). The wrapper preserves this. Keyboard:
-
-- `Alt+T` focuses the toast region (toasts are skipped in the normal
-  tab order).
-- `Esc` dismisses the focused toast.
-- `Tab` / `Shift+Tab` cycles through action buttons inside the region.
-
-Do **not** set `role` manually on a toast — sonner sets it per type.
+- **Live regions (WCAG 2.2 SC 4.1.3 Status Messages)**: `svelte-sonner` 1.2.1 wraps the toast lists in a `<section>` labelled with `containerAriaLabel` (default `'Notifications'`) plus the hotkey label and sets `aria-live="polite"` (`aria-relevant="additions text"`, `aria-atomic="false"`) on that `<section>`. Each toast `<li>` sets `aria-live="assertive"` when `{ important: true }` and `aria-live="polite"` otherwise (`aria-atomic="true"`). Reserve `important: true` for urgent failures that require immediate interruption.
+- **Keyboard navigation**: `Alt+T` (default `hotkey`) expands the stack and moves focus to the toast list; `Escape` collapses the stack when focus is inside the list; when focus leaves the list, focus returns to the previously focused element.
+- **Target size (WCAG 2.2 SC 2.5.8)**: `actionButtonStyle` and `cancelButtonStyle` enforce `24px` minimum targets on pointer-fine presets (`desktop`, `dashboard`) and `44px` on touch and D-pad presets (`handheld`, `10foot`).
 
 ## Testing
 
-Component + unit:
+Unit-test pure preset calculations in Node without a DOM, and mount `svelte-sonner`'s `<Toaster {...p.toaster} />` via `@testing-library/svelte` when asserting rendered styles:
 
 ```ts
-import { render, screen } from '@testing-library/svelte';
-import { toast, Toaster } from '@sveltesentio/ui/toast';
+import { describe, expect, it } from 'vitest';
+import { toastPreset, type ToasterPreset } from '@sveltesentio/ui/toast';
 
-test('toast.success renders with status role', async () => {
-  render(Toaster);
-  toast.success('Saved');
-  expect(await screen.findByRole('status', { name: /saved/i })).toBeInTheDocument();
+describe('toastPreset', () => {
+  it('computes 10foot toaster props', () => {
+    const toaster: ToasterPreset = toastPreset('10foot').toaster;
+    expect(toaster.position).toBe('top-center');
+    expect(toaster.gap).toBe(18);
+    expect(toaster.toastOptions.actionButtonStyle).toContain('min-height: 44px;');
+  });
 });
 ```
 
-Playwright for preset-scaling checks — set `data-preset='10foot'` on
-`<html>` in a fixture, assert `max-width` via `getComputedStyle`.
+Component test mounting `<Toaster {...p.toaster} />` (`svelte-sonner` renders `[data-sonner-toaster]` only when at least one toast is active; see [`packages/ui/test/Toaster.svelte.test.ts`](../../packages/ui/test/Toaster.svelte.test.ts) for the full worked example, including `inlineDeps: ['svelte-sonner', 'runed']` in Vitest config):
+
+```ts
+import { render } from '@testing-library/svelte';
+import { Toaster, toast } from 'svelte-sonner';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { toastPreset } from '@sveltesentio/ui/toast';
+
+describe('<Toaster {...p.toaster} />', () => {
+  beforeEach(() => {
+    vi.stubGlobal('matchMedia', (query: string): MediaQueryList => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      dispatchEvent: () => false,
+    }));
+  });
+
+  afterEach(() => {
+    toast.dismiss();
+    vi.unstubAllGlobals();
+  });
+
+  it('forwards the preset gap to the toaster list', async () => {
+    const p = toastPreset('10foot');
+    const { container, unmount } = render(Toaster, { ...p.toaster });
+    toast('probe');
+    const assertMounted = () => {
+      expect(container.querySelector('[data-sonner-toast]')).not.toBeNull();
+    };
+    await vi.waitFor(assertMounted, { timeout: 1000 });
+    const ol = container.querySelector<HTMLElement>('[data-sonner-toaster]');
+    expect(ol?.getAttribute('style')).toContain('--gap: 18px');
+    unmount();
+  });
+});
+```
 
 ## Anti-patterns
 
-- **Multiple `<Toaster>` instances.** Toasts stack across every mounted
-  Toaster. One at the root layout, done.
-- **Toasting form validation errors.** Validation belongs inline with
-  the field. Toast is for async results the user won't see another way.
-- **Long toasts (`duration: 30000`).** Users assume toasts expire. For
-  persistent state, use a banner / inline alert. Toast is transient by
-  contract.
-- **Hard-coded colors in a custom toast.** Use tokens — dark mode + per-tenant
-  overrides cascade through the oklch pipeline.
-- **Bypassing `toast.promise` for simple async.** Hand-written
-  `loading` / `success` pairs forget the `id` round-trip and double-stack
-  on re-render.
-- **Skipping the wrapper.** `svelte-sonner` direct loses preset sizing
-  - mode-watcher theme sync. ADR-0016's invariant requires the wrapper.
-- **Using toast as the error surface for `ProblemError` validation
-  details.** Map structured errors to form fields via
-  `problemToFieldErrors` ([forms.md](forms.md)). Toast is the floor, not
-  the ceiling.
+- **Passing `p.style` to `toastOptions.style`.** `p.style` is an object map retained for inspection; `svelte-sonner` expects a semicolon-terminated inline CSS string and drops the preset width when given `p.style` ([`Toaster.svelte.test.ts`](../../packages/ui/test/Toaster.svelte.test.ts)). Spread `<Toaster {...p.toaster} />` instead.
+- **Mounting `<Toaster>` without `toastPreset()`.** `@sveltesentio/ui/toast` does not wrap `<Toaster>` at runtime; mounting a bare `<Toaster />` skips preset width, padding, font-size, offset, gap, and the `44px` action/cancel target-size floor on `10foot` and `handheld`.
+- **Mounting a second `<Toaster>` without `id`.** Two `<Toaster>` instances without `id` both render every toast that has no `toasterId`, so each toast shows twice. Mount one default `<Toaster>` in the root `+layout.svelte`; a deliberate second region takes `id` on `<Toaster>` and passes `{ toasterId }` when firing its toasts.
+- **Toasting form validation errors.** Field-level `ProblemError` `invalidParams` belong inline next to their inputs via `problemToFieldErrors` from `@sveltesentio/forms` ([forms.md](forms.md)), not in a transient toast.
+- **Toasting raw `String(err)` of an `unknown` catch value.** Untyped thrown values can expose internal details or render `[object Object]`; narrow `err instanceof ProblemError` and fall back to a fixed generic message.
+- **Long toast durations (`duration: 30000`) for persistent state.** Toasts auto-dismiss (`4000` ms default) and are transient by contract; use an inline alert or banner for persistent status.
+- **Misusing `toast.loading()` for work of unknown length.** Plain `toast.loading()` auto-closes after `duration` (`4000` ms default), possibly before the work ends, and calling `toast.success()` without `{ id }` stacks beside it instead of replacing it. For work of unknown length, use `toast.promise()`. If the loading toast is given `duration: Infinity`, a `toast.success(message, { id })` update merges onto it, inherits `Infinity`, and never closes unless it passes its own finite `duration`.
+- **Hard-coded color literals in custom toast styles.** Reference semantic oklch tokens ([theming.md](theming.md)) so light/dark mode and tenant overrides cascade cleanly.
 
 ## References
 
-- ADR-0007 — `svelte-sonner` primitive lock.
-- ADR-0016 — `ui/toast` preset-aware wrapper decision.
-- ADR-0030 — `mode-watcher` pin.
-- ADR-0047 — per-interface presets (size scales, color doesn't).
-- [theming.md](theming.md) — oklch token pipeline.
-- [http-client.md](http-client.md) — `ProblemError` shape + `problemToMessage`.
-- svelte-sonner: <https://svelte-sonner.vercel.app>.
+- [ADR-0007](../adr/0007-svelte-sonner-toast-primitive.md) — `svelte-sonner` toast primitive lock.
+- [ADR-0016](../adr/0016-ui-toast-thin-wrapper-preset-sizing.md) — `@sveltesentio/ui/toast` shipped helper scope and `<Toaster {...p.toaster} />` delivery path.
+- [ADR-0030](../adr/0030-mode-watcher-pin.md) — `mode-watcher` `>=1.1.0 <2` runes-native peer pin.
+- [ADR-0047](../adr/0047-per-interface-presets.md) — per-interface presets (`desktop`, `dashboard`, `10foot`, `handheld`).
+- [theming.md](theming.md) — oklch semantic token pipeline.
+- [http-client.md](http-client.md) — `openapi-fetch` + RFC 9457 `ProblemError`.
+- [forms.md](forms.md) — Superforms and `problemToFieldErrors`.
+- [`@sveltesentio/ui` README](../../packages/ui/README.md) — package sub-exports and optional peer matrix.
+- [`Toaster.svelte.test.ts`](../../packages/ui/test/Toaster.svelte.test.ts) — component tests verifying `<Toaster {...p.toaster} />` DOM output.
+- [svelte-sonner README](https://github.com/wobsoriano/svelte-sonner#readme) — upstream API reference.

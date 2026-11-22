@@ -403,7 +403,7 @@ export async function load({ params, locals }) {
 ```svelte
 <!-- src/routes/checkout/+page.svelte -->
 <script lang="ts">
-  import { toast } from '@sveltesentio/ui/toast';
+  import { toast } from 'svelte-sonner';
   import { isProblemError } from '@sveltesentio/core/errors';
 
   let loading = $state(false);
