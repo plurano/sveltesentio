@@ -7,22 +7,22 @@
 <!-- 1 release/version -->
 
 <p align="center">
-  <a href="https://github.com/golusoris/sveltesentio/releases"><img src="https://img.shields.io/badge/Release-Releases-3b82f6?style=for-the-badge&labelColor=111a35" alt="Release" /></a>
+  <a href="https://github.com/plurano/sveltesentio/releases"><img src="https://img.shields.io/badge/Release-Releases-3b82f6?style=for-the-badge&labelColor=111a35" alt="Release" /></a>
 </p>
 
 <!-- 2 CI/build -->
 
 <p align="center">
-  <a href="https://github.com/golusoris/sveltesentio/actions/workflows/ci.yml"><img src="https://github.com/golusoris/sveltesentio/actions/workflows/ci.yml/badge.svg?branch=main&event=push" alt="CI" /></a>
-  <a href="https://github.com/golusoris/sveltesentio/actions/workflows/portability.yml"><img src="https://github.com/golusoris/sveltesentio/actions/workflows/portability.yml/badge.svg?branch=main&event=push" alt="Platform Neutrality" /></a>
-  <a href="https://github.com/golusoris/sveltesentio/actions/workflows/praetor-docs.yml"><img src="https://github.com/golusoris/sveltesentio/actions/workflows/praetor-docs.yml/badge.svg?branch=main&event=push" alt="Documentation Governance" /></a>
+  <a href="https://github.com/plurano/sveltesentio/actions/workflows/ci.yml"><img src="https://github.com/plurano/sveltesentio/actions/workflows/ci.yml/badge.svg?branch=main&event=push" alt="CI" /></a>
+  <a href="https://github.com/plurano/sveltesentio/actions/workflows/portability.yml"><img src="https://github.com/plurano/sveltesentio/actions/workflows/portability.yml/badge.svg?branch=main&event=push" alt="Platform Neutrality" /></a>
+  <a href="https://github.com/plurano/sveltesentio/actions/workflows/praetor-docs.yml"><img src="https://github.com/plurano/sveltesentio/actions/workflows/praetor-docs.yml/badge.svg?branch=main&event=push" alt="Documentation Governance" /></a>
 </p>
 
 <!-- 3 security/scorecard -->
 
 <p align="center">
-  <a href="https://github.com/golusoris/sveltesentio/actions/workflows/codeql.yml"><img src="https://github.com/golusoris/sveltesentio/actions/workflows/codeql.yml/badge.svg?branch=main&event=push" alt="CodeQL" /></a>
-  <a href="https://scorecard.dev/viewer/?uri=github.com/golusoris/sveltesentio"><img src="https://img.shields.io/badge/OpenSSF-Scorecard-06b6d4?style=for-the-badge&labelColor=111a35" alt="OpenSSF Scorecard" /></a>
+  <a href="https://github.com/plurano/sveltesentio/actions/workflows/codeql.yml"><img src="https://github.com/plurano/sveltesentio/actions/workflows/codeql.yml/badge.svg?branch=main&event=push" alt="CodeQL" /></a>
+  <a href="https://scorecard.dev/viewer/?uri=github.com/plurano/sveltesentio"><img src="https://img.shields.io/badge/OpenSSF-Scorecard-06b6d4?style=for-the-badge&labelColor=111a35" alt="OpenSSF Scorecard" /></a>
   <a href="https://www.bestpractices.dev/projects/15664"><img src="https://www.bestpractices.dev/projects/15664/badge" alt="OpenSSF Best Practices" /></a>
   <a href="https://coderabbit.ai"><img src="https://img.shields.io/badge/Reviews-CodeRabbit-8b5cf6?style=for-the-badge&logo=coderabbit&logoColor=white&labelColor=111a35" alt="CodeRabbit" /></a>
 </p>
@@ -42,7 +42,7 @@
 </p>
 
 <p align="center"><strong>Composable SvelteKit framework — opt-in modules, Svelte 5 runes</strong></p>
-<p align="center"><em>The direct frontend counterpart to <a href="https://github.com/golusoris/golusoris">golusoris</a></em></p>
+<p align="center"><em>The direct frontend counterpart to <a href="https://github.com/plurano/golusoris">golusoris</a></em></p>
 
 Apps install only what they need from `@sveltesentio/*`. Philosophy first, code second.
 
@@ -81,9 +81,9 @@ pnpm add @sveltesentio/core @sveltesentio/query @sveltesentio/api @sveltesentio/
 - **Colors**: oklch only — no hex, no rgb, no hsl
 - **Spacing**: 8pt grid (`--space-1` → `--space-24`)
 - **Interface types**: desktop, 10-foot, handheld, dashboard (see [ADR-0047](docs/adr/0047-per-interface-presets.md))
-- **Standards**: WCAG 2.2 AA, OWASP ASVS L2, SLSA Build Level 2 (Level 3 is open, [#280](https://github.com/golusoris/sveltesentio/issues/280)), EU AI Act Art. 12, Svelte 5 runes-first
+- **Standards**: WCAG 2.2 AA, OWASP ASVS L2, SLSA Build Level 2 (Level 3 is open, [#280](https://github.com/plurano/sveltesentio/issues/280)), EU AI Act Art. 12, Svelte 5 runes-first
 
-See [`docs/principles.md`](docs/principles.md) and [`docs/ux-principles.md`](docs/ux-principles.md). [Support & discussions](https://github.com/golusoris/sveltesentio/discussions).
+See [`docs/principles.md`](docs/principles.md) and [`docs/ux-principles.md`](docs/ux-principles.md). [Support & discussions](https://github.com/plurano/sveltesentio/discussions).
 
 ## Development
 

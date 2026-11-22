@@ -524,7 +524,7 @@ Every app using the PWA preset must pass:
 - [ ] HTTPS (required by browsers)
 - [ ] `<meta name="theme-color">` set to `--color-primary` oklch value as hex fallback
 - [ ] `safe-area-inset-*` applied to all full-screen layouts
-- [ ] Installability: Lighthouse 13 has no PWA category any more, so no score gates this list; it is checked by review (target, not gated yet: [#324](https://github.com/golusoris/sveltesentio/issues/324))
+- [ ] Installability: Lighthouse 13 has no PWA category any more, so no score gates this list; it is checked by review (target, not gated yet: [#324](https://github.com/plurano/sveltesentio/issues/324))
 
 ### Testing cross-platform
 

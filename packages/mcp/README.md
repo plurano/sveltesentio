@@ -2,7 +2,7 @@
 
 > Model Context Protocol server exposing sveltesentio's module catalog, ADR index, compose recipes, and compliance checklists to AI coding assistants.
 
-Part of the [sveltesentio](https://github.com/golusoris/sveltesentio) composable SvelteKit framework.
+Part of the [sveltesentio](https://github.com/plurano/sveltesentio) composable SvelteKit framework.
 
 ## Status
 

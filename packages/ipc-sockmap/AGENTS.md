@@ -21,7 +21,7 @@ Node-side, server-only (`node:net` / `node:fs`), Linux-focused. Implements **unb
 ## Status
 
 - **LANDED (v0.1.0):** Tier 1 client + framing codec + ladder detection.
-- **LANDED (Tier 3 observe client):** golusoris [#27](https://github.com/golusoris/golusoris/issues/27) shipped `pkg/sockmap` (golusoris PR #268). Package provides Node-side capability probe + systemd socket-activation handoff + key-count/Prometheus observability. Degrades to Tier 1 when pin absent. Redirect remains kernel-side + transparent — `detectTransport` selects tier for request client with **no per-request code change**.
+- **LANDED (Tier 3 observe client):** golusoris [#27](https://github.com/plurano/golusoris/issues/27) shipped `pkg/sockmap` (golusoris PR #268). Package provides Node-side capability probe + systemd socket-activation handoff + key-count/Prometheus observability. Degrades to Tier 1 when pin absent. Redirect remains kernel-side + transparent — `detectTransport` selects tier for request client with **no per-request code change**.
 
 ## Why an observe/handoff client (not a writer)
 
@@ -75,4 +75,4 @@ Privileged integration tests (Docker `--privileged` + `bpffs` + loaded golusoris
 
 - [ADR-0051](../../docs/adr/0051-colocated-ipc-ladder-ebpf-sockmap.md) — three-tier ladder.
 - [docs/compose/colocated-ipc.md](../../docs/compose/colocated-ipc.md) — Tier 1 + 2 recipes.
-- [golusoris/golusoris#27](https://github.com/golusoris/golusoris/issues/27) — golusoris-side Tier-3 work.
+- [plurano/golusoris#27](https://github.com/plurano/golusoris/issues/27) — golusoris-side Tier-3 work.

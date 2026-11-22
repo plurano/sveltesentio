@@ -138,7 +138,7 @@ cilium config view | grep -E 'socketLB|kubeProxy'
 
 BPF program attaches to the cgroup v2 hierarchy containing both processes. Listen FDs from both sides are registered in a `BPF_MAP_TYPE_SOCKHASH`. Payloads between registered sockets bypass the full TCP stack — the BPF `SK_MSG` hook redirects buffers directly.
 
-**This tier requires coordinated changes in both sveltesentio and golusoris** — both shipped: golusoris's `pkg/sockmap` ([#27](https://github.com/golusoris/golusoris/issues/27)) owns the BPF program + pinned sockhash, and `@sveltesentio/ipc-sockmap/sockmap` is the Node-side capability-probe + socket-activation + observability client.
+**This tier requires coordinated changes in both sveltesentio and golusoris** — both shipped: golusoris's `pkg/sockmap` ([#27](https://github.com/plurano/golusoris/issues/27)) owns the BPF program + pinned sockhash, and `@sveltesentio/ipc-sockmap/sockmap` is the Node-side capability-probe + socket-activation + observability client.
 
 ### Architecture
 
@@ -239,7 +239,7 @@ fx.New(
 ).Run()
 ```
 
-The module handles BPF object loading, sockhash pinning at `/sys/fs/bpf/golusoris/sockhash`, cgroup v2 attachment, systemd socket activation, and pre-shutdown cleanup. See [golusoris/golusoris#27](https://github.com/golusoris/golusoris/issues/27) and `golusoris/pkg/sockmap/AGENTS.md` for the full map contract.
+The module handles BPF object loading, sockhash pinning at `/sys/fs/bpf/golusoris/sockhash`, cgroup v2 attachment, systemd socket activation, and pre-shutdown cleanup. See [plurano/golusoris#27](https://github.com/plurano/golusoris/issues/27) and `golusoris/pkg/sockmap/AGENTS.md` for the full map contract.
 
 ### Observability
 
@@ -305,4 +305,4 @@ The deltas between tiers are workload-dependent. Don't assume; measure.
 - `github.com/cilium/ebpf` — Go userspace library
 - `bpf2go` — Go codegen for BPF objects
 - [ADR-0051](../adr/0051-colocated-ipc-ladder-ebpf-sockmap.md) — decision record
-- [golusoris/golusoris#27](https://github.com/golusoris/golusoris/issues/27) — shipped Golusoris-side `pkg/sockmap` (golusoris PR #268)
+- [plurano/golusoris#27](https://github.com/plurano/golusoris/issues/27) — shipped Golusoris-side `pkg/sockmap` (golusoris PR #268)

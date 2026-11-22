@@ -83,7 +83,7 @@ Per Art. 13(24) + Annex I Part II (1). State measured on 2026-10-11, step order 
 - The file is a workflow artifact that expires with the run. No release
   carries an SBOM yet.
 
-Open in [#280](https://github.com/golusoris/sveltesentio/issues/280): an
+Open in [#280](https://github.com/plurano/sveltesentio/issues/280): an
 SBOM attached to every release, and a verifiable npm provenance attestation.
 
 ## Incident reporting

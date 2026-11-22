@@ -2,7 +2,7 @@
 
 > Server-proxy-only LLM client, on-device transformers seam, and EU AI Act audit hook
 
-Part of the [sveltesentio](https://github.com/golusoris/sveltesentio) composable SvelteKit framework.
+Part of the [sveltesentio](https://github.com/plurano/sveltesentio) composable SvelteKit framework.
 
 ## Status
 

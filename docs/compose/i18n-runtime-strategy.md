@@ -324,7 +324,7 @@ Replace `import { … } from '@inlang/paraglide-sveltekit'` with
 carry over.
 
 arca is the reference integration (see
-`golusoris/app-arca/src/lib/paraglide/`).
+`plurano/app-arca/src/lib/paraglide/`).
 
 ## Upgrading from Paraglide 2
 

@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Before filing, check [existing issues](https://github.com/golusoris/sveltesentio/issues).
+        Before filing, check [existing issues](https://github.com/plurano/sveltesentio/issues).
   - type: input
     id: package
     attributes:

@@ -1,6 +1,6 @@
 # Downstream antipatterns — v0.1 adoption checklist
 
-> When adopting `@sveltesentio/*` v0.1, each downstream app must remediate the antipatterns below. This document is the authoritative migration checklist across `golusoris/app-{arca,revenge,subdo,lurkarr}` (local working copies `~/dev/{arca,revenge,subdo,Lurkarr}`).
+> When adopting `@sveltesentio/*` v0.1, each downstream app must remediate the antipatterns below. This document is the authoritative migration checklist across `plurano/app-{arca,revenge,subdo,lurkarr}` (local working copies `~/dev/{arca,revenge,subdo,Lurkarr}`).
 >
 > Each row links the dispositive evidence, the replacement ADR, and the migration shape. Rows are grouped by app for review ergonomics; ordering within a group prioritises **security > correctness > maintenance**.
 
