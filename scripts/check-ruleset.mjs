@@ -488,7 +488,13 @@ function checkContextPublisher(check, publishers, findings) {
 		);
 		return;
 	}
-	const matching = publishers.filter(({ names }) => names.has(context));
+	const matching = publishers.filter(
+		({ names, prefixes }) =>
+			names.has(context) ||
+			prefixes.some(
+				(prefix) => context.startsWith(prefix) && context.slice(prefix.length).trim().length > 0,
+			),
+	);
 	if (matching.length === 0) {
 		findings.push(
 			`${RULESET_PATH}: required status check '${context}' is not published by any job ` +
