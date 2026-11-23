@@ -105,7 +105,6 @@
 				"tools/figures/README.md",
 				".devcontainer/devcontainer.json",
 				".devcontainer/Dockerfile.praetor",
-				".github/workflows/reuse.yml",
 				".config/reuse/requirements.txt"
 			],
 			"enabled": false
@@ -117,7 +116,9 @@
 				"github.com/cordanaLLM/praetor/**",
 				"github.com/cordanaLLM/praetor/cmd/standardsctl",
 				"cordanaLLM/praetor",
-				"cordanaLLM/praetor/**"
+				"cordanaLLM/praetor/**",
+				"tekmora/praetor",
+				"tekmora/praetor/**"
 			],
 			"enabled": false
 		}

@@ -1,4 +1,4 @@
-# Paperclip Operating Rules (golusoris/sveltesentio)
+# Paperclip Operating Rules (plurano/sveltesentio)
 
 ## Operating Contract
 
