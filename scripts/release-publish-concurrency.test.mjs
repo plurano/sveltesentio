@@ -27,8 +27,12 @@ const READ_KEYS = new Set(['group', 'cancel-in-progress']);
 // Flow mappings, block scalars, anchors, aliases and tags start otherwise
 // and are refused, so a form it cannot read never passes unread.
 const PLAIN_VALUE = /^[A-Za-z0-9_$]/;
-const PER_RUN_CONTEXT =
-	/\bgithub\s*(?:\.\s*|\[\s*['"])(run_id|run_number|run_attempt|sha|event_name)\b/i;
+// Allow-list: the only expression a group may carry is github.workflow, which
+// is the same for every run of this workflow. Every other expression could
+// differ between runs and split publishers that must serialize, so it is
+// refused, and so is a `${{` the reader cannot pair with its `}}`.
+const EXPRESSION = /\$\{\{(.*?)\}\}/g;
+const CONSTANT_EXPRESSIONS = new Set(['github.workflow']);
 
 /** Scalar text after a YAML colon, with quotes and trailing comments removed. */
 function stripComment(raw) {
@@ -102,9 +106,17 @@ function concurrencyEntries(jobLines) {
 
 function groupFindings(group) {
 	if (!PLAIN_VALUE.test(group)) return [`concurrency group form not read (${group})`];
-	const bad = PER_RUN_CONTEXT.exec(group);
-	if (bad === null) return [];
-	return [`concurrency group uses per-run or per-event context github.${bad[1].toLowerCase()}`];
+	const findings = [];
+	for (const match of group.matchAll(EXPRESSION)) {
+		const inner = match[1].trim();
+		if (!CONSTANT_EXPRESSIONS.has(inner)) {
+			findings.push(`concurrency group expression not allowed (${inner})`);
+		}
+	}
+	if (group.replace(EXPRESSION, '').includes('${{')) {
+		findings.push(`concurrency group expression not read (${group})`);
+	}
+	return findings;
 }
 
 function blockGroupFindings(block) {
@@ -242,20 +254,35 @@ describe('release-please.yml publish concurrency: negative', () => {
 		]);
 	});
 
-	it('refuses per-run and per-event contexts in the concurrency group', () => {
+	it('refuses every group expression other than github.workflow', () => {
 		const groups = [
-			['${{ github.run_id }}', 'run_id'],
-			['publish-${{ github.event_name }}', 'event_name'],
-			['publish-${{ github.run_number }}', 'run_number'],
-			['publish-${{ github.run_attempt }}', 'run_attempt'],
-			['publish-${{ github.sha }}', 'sha'],
+			['${{ github.run_id }}', 'github.run_id'],
+			['publish-${{ github.event_name }}', 'github.event_name'],
+			['publish-${{ github.run_number }}', 'github.run_number'],
+			['publish-${{ github.run_attempt }}', 'github.run_attempt'],
+			['publish-${{ github.sha }}', 'github.sha'],
+			['publish-${{ github.event.after }}', 'github.event.after'],
+			['publish-${{ github.ref }}', 'github.ref'],
+			["publish-${{ github['run_id'] }}", "github['run_id']"],
+			['publish-${{ GITHUB.WORKFLOW }}', 'GITHUB.WORKFLOW'],
+			['publish-${{ github.workflow }}-${{ github.run_id }}', 'github.run_id'],
 		];
-		for (const [group, key] of groups) {
+		for (const [group, expression] of groups) {
 			const block = concurrencyBlock(`group: ${group}`, 'cancel-in-progress: false');
 			assert.deepEqual(publishConcurrencyFindings(publishJob(block)), [
-				`concurrency group uses per-run or per-event context github.${key}`,
+				`concurrency group expression not allowed (${expression})`,
 			]);
 		}
+	});
+
+	it('refuses an expression it cannot pair', () => {
+		const block = concurrencyBlock(
+			'group: publish-${{ github.workflow',
+			'cancel-in-progress: false',
+		);
+		assert.deepEqual(publishConcurrencyFindings(publishJob(block)), [
+			'concurrency group expression not read (publish-${{ github.workflow)',
+		]);
 	});
 
 	it('refuses a concurrency block without group', () => {
@@ -308,6 +335,11 @@ describe('release-please.yml publish concurrency: boundary', () => {
 			'group: ${{ github.workflow }}-publish',
 			'cancel-in-progress: false',
 		);
+		assert.deepEqual(publishConcurrencyFindings(publishJob(block)), []);
+	});
+
+	it('accepts the workflow expression without inner spaces', () => {
+		const block = concurrencyBlock('group: ${{github.workflow}}-publish');
 		assert.deepEqual(publishConcurrencyFindings(publishJob(block)), []);
 	});
 
