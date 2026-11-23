@@ -92,6 +92,19 @@ jobs:
     # A manual run started from any other branch is skipped: only main is
     # published. A push run is on main by its trigger.
     if: ${{ github.ref == 'refs/heads/main' }}
+    # Push runs and manual runs share one group so a second run waits until the
+    # running one ends; its `pnpm -r publish` then skips every version the
+    # registry already holds. A running publish is never cancelled because
+    # cutting it midway leaves some packages on the registry and others absent.
+    # GitHub keeps at most one pending run per group, so a newer pending run
+    # replaces an older pending one and a replaced manual run is started again
+    # by hand. `queue: max` is omitted because the actionlint image pinned in
+    # scripts/check-workflows.mjs (1.7.12) refuses the `queue` key.
+    # scripts/release-publish-concurrency.test.mjs refuses a publish job without
+    # this group.
+    concurrency:
+      group: release-please-publish
+      cancel-in-progress: false
     runs-on: ubuntu-26.04
     timeout-minutes: 15
     permissions:
