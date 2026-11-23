@@ -6,6 +6,7 @@ import type {
 	DescService,
 	MessageShape,
 } from '@bufbuild/protobuf';
+import { ProblemError } from '@sveltesentio/core/problem';
 import { describeConnectErrorContract } from '../../../test-support/connect-error';
 import {
 	createClient,
@@ -85,11 +86,31 @@ describe('createClient', () => {
 	});
 });
 
-describe('createTransport', () => {
-	it('throws without a baseUrl', () => {
-		expect(() => createTransport({})).toThrow(/baseUrl/);
-	});
+/** Runs `build` and returns what it threw (`undefined` when it returned). */
+function thrownBy(build: () => unknown): unknown {
+	try {
+		build();
+	} catch (error) {
+		return error;
+	}
+	return undefined;
+}
 
+describe('missing baseUrl', () => {
+	it.each([
+		{ factory: 'createTransport', build: () => createTransport({}) },
+		{ factory: 'createClient', build: () => createClient(fakeStreamingService(), {}) },
+	])('$factory throws a ProblemError without a baseUrl or transport', ({ build }) => {
+		const error = thrownBy(build);
+		expect(error).toBeInstanceOf(ProblemError);
+		const problem = error as ProblemError;
+		expect(problem.type).toBe('about:blank');
+		expect(problem.status).toBe(500);
+		expect(problem.detail).toMatch(/baseUrl/);
+	});
+});
+
+describe('createTransport', () => {
 	it('builds a transport when given a baseUrl', () => {
 		const transport = createTransport({ baseUrl: 'https://api.example.test' });
 		expect(typeof transport.unary).toBe('function');

@@ -49,7 +49,12 @@ export interface CreateClientOptions {
 export function createTransport(options: CreateClientOptions): Transport {
 	const { baseUrl, fetch: fetchImpl, credentials, interceptors, useBinaryFormat } = options;
 	if (baseUrl === undefined) {
-		throw new Error('createTransport requires a baseUrl (or pass an explicit transport)');
+		throw new ProblemError({
+			type: 'about:blank',
+			title: 'Missing base URL',
+			status: 500,
+			detail: 'createTransport requires a baseUrl (or pass an explicit transport).',
+		});
 	}
 	return createConnectTransport({
 		baseUrl,
