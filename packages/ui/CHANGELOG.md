@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.10.0](https://github.com/plurano/sveltesentio/compare/ui-v0.9.1...ui-v0.10.0) (2026-11-23)
+
+### ⚠ BREAKING CHANGES
+
+- **ui:** @sveltesentio/ui declares the optional peer svelte-sonner ">=1.2.0 <2". Applications on svelte-sonner 1.0.x or 1.1.x get a peer warning or refusal from package managers that enforce peers.
+
+### Bug Fixes
+
+- **ui:** raise the svelte-sonner peer floor to 1.2.0 ([#686](https://github.com/plurano/sveltesentio/issues/686)) ([fa32afc](https://github.com/plurano/sveltesentio/commit/fa32afc5b39d472340c991cda0f8365f0ef37953))
+
 ## [0.9.1](https://github.com/plurano/sveltesentio/compare/ui-v0.9.0...ui-v0.9.1) (2026-11-22)
 
 ### Bug Fixes

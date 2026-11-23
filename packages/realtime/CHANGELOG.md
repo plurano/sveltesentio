@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.8.2](https://github.com/plurano/sveltesentio/compare/realtime-v0.8.1...realtime-v0.8.2) (2026-11-23)
+
+### Bug Fixes
+
+- **realtime:** raise ProblemError when createTransport has no baseUrl ([#682](https://github.com/plurano/sveltesentio/issues/682)) ([2177dfa](https://github.com/plurano/sveltesentio/commit/2177dfad7e7b90709a0c498f6ad8947ff6b29670))
+
 ## [0.8.1](https://github.com/plurano/sveltesentio/compare/realtime-v0.8.0...realtime-v0.8.1) (2026-11-22)
 
 ### Bug Fixes
