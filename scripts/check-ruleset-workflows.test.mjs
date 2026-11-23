@@ -312,7 +312,11 @@ it('R1 prefixes callee literal and matrix job names with the reusable caller nam
 		'Reusable / Lint (windows)',
 	]);
 	assert.equal(publishers[0].names.has('Reusable'), false);
+	assert.deepEqual(publishers[0].prefixes, []);
 });
+
+const remoteWorkflowPath = 'plurano/horistes/.github/workflows/licence.yml';
+const pinnedRemote = `${remoteWorkflowPath}@${'a'.repeat(40)}`;
 
 const invalidReusableCalls = [
 	['callee without workflow_call', {}, { on: 'pull_request' }],
@@ -320,6 +324,23 @@ const invalidReusableCalls = [
 	['caller with matrix', { strategy: { matrix: { os: ['linux'] } } }, {}],
 	['constant-false caller', { if: false }, {}],
 	['remote call', { uses: 'owner/repo/.github/workflows/x.yml@v1' }, {}],
+	['remote call with a 39-character SHA', { uses: `${remoteWorkflowPath}@${'a'.repeat(39)}` }, {}],
+	['remote call with a 41-character SHA', { uses: `${remoteWorkflowPath}@${'a'.repeat(41)}` }, {}],
+	['remote call with an uppercase SHA', { uses: `${remoteWorkflowPath}@${'A'.repeat(40)}` }, {}],
+	['remote call pinned to a branch', { uses: `${remoteWorkflowPath}@main` }, {}],
+	['remote call with an expression name', { uses: pinnedRemote, name: '${{ inputs.n }}' }, {}],
+	['remote call without name', { uses: pinnedRemote, name: undefined }, {}],
+	['constant-false remote caller', { uses: pinnedRemote, if: false }, {}],
+	[
+		'remote caller with matrix',
+		{ uses: pinnedRemote, strategy: { matrix: { os: ['linux'] } } },
+		{},
+	],
+	[
+		'remote call outside the workflows directory',
+		{ uses: `owner/repo/ci.yml@${'a'.repeat(40)}` },
+		{},
+	],
 	['JSON workflow call', { uses: './.github/workflows/callee.json' }, {}],
 	['nested callee call', {}, { jobs: { nested: { uses: './.github/workflows/x.yml' } } }],
 ];
@@ -330,8 +351,22 @@ for (const [label, caller, callee] of invalidReusableCalls) {
 		assert.deepEqual(findings, []);
 		const publisher = publishers.find(({ relPath }) => relPath.endsWith('/caller.yml'));
 		assert.deepEqual([...publisher.names], []);
+		assert.deepEqual(publisher.prefixes, []);
 	});
 }
+
+it('R3 publishes only the prefix of a remote call pinned to a full SHA', async () => {
+	const { publishers, findings } = await publishersFor({
+		'.github/workflows/caller.yml': JSON.stringify({
+			on: 'pull_request',
+			jobs: { call: { name: 'Licence', uses: pinnedRemote } },
+		}),
+	});
+	assert.deepEqual(findings, []);
+	assert.equal(publishers.length, 1);
+	assert.deepEqual([...publishers[0].names], []);
+	assert.deepEqual(publishers[0].prefixes, ['Licence / ']);
+});
 
 it('R2 keeps a callee job skipped by a constant-false condition', async () => {
 	const workflows = reusableWorkflows({}, { jobs: { build: runnable({ if: false }) } });

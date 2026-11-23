@@ -1,5 +1,7 @@
 // Resolve bounded workflow publishers and judge pull_request filters against main.
 // Shared trigger diagnostics keep the CI Gate contract in check-ruleset.mjs unchanged.
+// Remote callees are not fetched, so calls pinned to a full commit publish `<caller> / *`, and
+// GitHub blocks merging if a required check never reports.
 import { readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { parse } from 'yaml';
@@ -15,6 +17,8 @@ const PATTERN_LIMIT = 255;
 const MATRIX_EXPRESSION_RE = /\$\{\{\s*matrix\.([A-Za-z_][\w-]*)\s*\}\}/g;
 const CONSTANT_FALSE_RE = /^\s*(?:false|\$\{\{\s*false\s*\}\})\s*$/;
 const LOCAL_WORKFLOW_RE = /^\.\/\.github\/workflows\/[\w.-]+\.ya?ml$/;
+const REMOTE_WORKFLOW_RE =
+	/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/\.github\/workflows\/[A-Za-z0-9_.-]+\.ya?ml@[0-9a-f]{40}$/;
 
 /** Recognize YAML mappings, excluding null and sequences. */
 function isMapping(value) {
@@ -240,16 +244,16 @@ export function publishedJobNames(id, job) {
 	return matrixCombinations(matrix).flatMap((entry) => expandMatrixName(name, entry));
 }
 
-/** Accept a local, literally named, unconditional caller without a matrix. */
-function isResolvableCaller(job) {
-	if (typeof job.uses !== 'string' || !LOCAL_WORKFLOW_RE.test(job.uses)) return false;
+/** Accept an allow-listed, literally named caller without a matrix or constant-false condition. */
+function isResolvableCaller(job, workflowRef) {
+	if (typeof job.uses !== 'string' || !workflowRef.test(job.uses)) return false;
 	if (typeof job.name !== 'string' || job.name.includes('${{')) return false;
 	return !isConstantFalse(job) && !(job.strategy && Object.hasOwn(job.strategy, 'matrix'));
 }
 
 /** Resolve one local reusable call against the already-read allow-list, without nesting. */
 function reusableJobNames(job, documents) {
-	if (!isResolvableCaller(job)) return [];
+	if (!isResolvableCaller(job, LOCAL_WORKFLOW_RE)) return [];
 	const callee = documents.get(job.uses.slice(2));
 	if (!callee || !hasEvent(callee.doc?.on, 'workflow_call')) return [];
 	return callee.jobs.flatMap(([id, target]) =>
@@ -343,7 +347,10 @@ export async function readContextWorkflows(rootDir, findings) {
 		if (!source || !publishesPullRequest(source.doc)) continue;
 		const { doc, jobs } = source;
 		const names = new Set(jobs.flatMap(([id, job]) => workflowJobNames(id, job, documents)));
-		publishers.push({ relPath, doc, names });
+		const prefixes = jobs
+			.filter(([, job]) => isResolvableCaller(job, REMOTE_WORKFLOW_RE))
+			.map(([, job]) => `${job.name} / `);
+		publishers.push({ relPath, doc, names, prefixes });
 	}
 	return publishers;
 }

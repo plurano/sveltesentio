@@ -22,6 +22,17 @@ import { withTimeout } from './check-template-labels.mjs';
 before(createTempRoot);
 after(removeTempRoot);
 
+const remoteContext = 'Licence / REUSE lint';
+
+/** Serialize a Licence caller with a full commit pin and pull_request trigger by default. */
+function remoteCallerWorkflows(trigger = 'pull_request', ref = 'a'.repeat(40)) {
+	return {
+		'.github/workflows/reuse.yml': namedWorkflow('Licence', trigger, {
+			uses: `plurano/horistes/.github/workflows/licence.yml@${ref}`,
+		}),
+	};
+}
+
 /** Read repository fixture inputs with the same explicit I/O deadline as other script tests. */
 async function repositoryFile(relPath) {
 	return readFile(join(ownRoot, relPath), {
@@ -242,6 +253,37 @@ it('N10 reports an unparsable workflow without losing a valid publisher', async 
 	assert.deepEqual(await checkRuleset(root), { findings: [expected] });
 });
 
+it('N11 rejects a remote caller context with a blank callee name', async () => {
+	const contexts = ['Licence / ', 'Licence /  \t'];
+	const root = await fixture({
+		ruleset: requiring(...contexts),
+		workflows: remoteCallerWorkflows(),
+	});
+	assert.deepEqual(await checkRuleset(root), { findings: contexts.map(unpublished) });
+});
+
+it('N12 rejects a remote caller context with a different caller name', async () => {
+	const context = 'Other / REUSE lint';
+	const root = await fixture({ ruleset: requiring(context), workflows: remoteCallerWorkflows() });
+	assert.deepEqual(await checkRuleset(root), { findings: [unpublished(context)] });
+});
+
+it('N13 rejects a remote caller context pinned to a tag', async () => {
+	const root = await fixture({
+		ruleset: requiring(remoteContext),
+		workflows: remoteCallerWorkflows('pull_request', 'v1'),
+	});
+	assert.deepEqual(await checkRuleset(root), { findings: [unpublished(remoteContext)] });
+});
+
+it('N14 rejects a remote caller context published only on push', async () => {
+	const root = await fixture({
+		ruleset: requiring(remoteContext),
+		workflows: remoteCallerWorkflows({ push: { branches: ['main'] } }),
+	});
+	assert.deepEqual(await checkRuleset(root), { findings: [unpublished(remoteContext)] });
+});
+
 for (const total of [100, 101]) {
 	it(`B1 handles exactly ${total} workflow directory entries`, async () => {
 		const workflows = Object.fromEntries(
@@ -418,4 +460,12 @@ it('A7 applies ordered branch negation for additional workflow paths', async () 
 				"for required status check 'Excluded'",
 		],
 	});
+});
+
+it('A8 accepts a required context from a remote caller pinned to a full SHA', async () => {
+	const root = await fixture({
+		ruleset: requiring(remoteContext),
+		workflows: remoteCallerWorkflows(),
+	});
+	assert.deepEqual(await checkRuleset(root), { findings: [] });
 });
