@@ -32,7 +32,7 @@ Some tools compare the repository identity exactly and do not follow the redirec
 
 **Positive**:
 
-- Links, badges and the attestation command in `SECURITY.md` resolve without the forge redirect (pull request 677).
+- Links, badges and the attestation command in `SECURITY.md` resolve without the forge redirect (pull request 677). The exception is the generated governance block in `README.md` (`praetor:readme-governance`), whose three links still name `golusoris/sveltesentio` until the re-adopt in decision 5 regenerates it.
 - Provenance attestations and `repository.url` (pull request 675) name the same repository, so a re-pointed trusted publisher accepts the publish.
 
 **Negative / trade-offs**:
