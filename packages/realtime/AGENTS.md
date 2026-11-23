@@ -36,7 +36,7 @@ Three transports, three hooks — unifying abstraction rejected as leaky (D73 lo
 ## Invariants
 
 - **SSE reconnect exponential with jitter** — fixed delay causes thundering-herd on backend restart. Default: `min=1s, max=30s, jitter=0.3`.
-- **ConnectRPC errors surface as `ConnectError`** — do **not** map onto RFC 9457 `ProblemError`. Different error model; different code paths.
+- **ConnectRPC errors surface as `ConnectError`** — do **not** map onto RFC 9457 `ProblemError`. Different error model; different code paths. Factory misuse before any call (`createTransport` / `createClient` without `baseUrl` or `transport`) = `ProblemError` (hard rule 5).
 - **No wrapping `fetch` to emulate streaming.** Use `EventSource` (SSE) or ConnectRPC streaming client. Hand-rolled SSE parsing antipattern.
 - **Backpressure explicit.** Every `useSSE` / `useConnectStream` has `bufferMs` prop throttling `$state` updates -> 10k-msg/s feeds do not thrash render loop.
 
