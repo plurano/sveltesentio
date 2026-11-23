@@ -1,10 +1,9 @@
 {
   "version": 1,
-  "generated_at": "2026-11-07T09:11:47Z",
-  "repository": "golusoris/sveltesentio",
+  "generated_at": "2026-11-23T01:56:03Z",
+  "repository": "plurano/sveltesentio",
   "commit_sha": "9dfcfcd25386c200b8fbdc719284195aed742e63",
   "total_infractions": 2,
-  "increase_rationale": "adoption baseline",
   "infractions": [
     {
       "rule_id": "RELEASE-TEST-LEVEL",
