@@ -64,7 +64,7 @@ const p = toastPreset('10foot'); // top-center, 40rem, scaled padding
 // <Toaster {...p.toaster} />
 ```
 
-Expanded-stack spacing follows the preset `gap` from `svelte-sonner` 1.2.0; on `1.0.x`/`1.1.x`, the expanded offset stays at `svelte-sonner`'s fixed `14px` (#648).
+The optional peer floor is `svelte-sonner` 1.2.0 (`>=1.2.0 <2`) because from that release the expanded stack spaces toasts by the preset `gap` (`1.0.x`/`1.1.x` used a fixed `14px`; #648).
 
 ### Colour palettes and contrast checking
 

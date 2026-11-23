@@ -41,13 +41,13 @@ describe('collectRanges', () => {
 		assert.deepEqual(conflicts, ['svelte: a declares ">=5.56.4", b declares ">=5.0.0"']);
 	});
 
-	it('accepts manifests without peers and floors exactly the five peers', () => {
+	it('accepts manifests without peers and floors exactly the six peers', () => {
 		const { ranges, conflicts } = collectRanges([{ name: 'a' }]);
 		assert.equal(ranges.size, 0);
 		assert.deepEqual(conflicts, []);
 		assert.deepEqual(
 			[...FLOORED_PEERS],
-			['svelte', '@sveltejs/kit', 'vite', 'typescript', 'layerchart'],
+			['svelte', '@sveltejs/kit', 'vite', 'typescript', 'layerchart', 'svelte-sonner'],
 		);
 	});
 });

@@ -31,7 +31,9 @@ const root = join(fileURLToPath(new URL('.', import.meta.url)), '..');
  * layerchart is floored with svelte: left unpinned, the job installs the
  * newest layerchart, whose own svelte peer can sit above the svelte floor
  * (layerchart 2.10.0 needs svelte ^5.57.0), and tests a pair no consumer
- * can install.
+ * can install. svelte-sonner is floored so the 1.2.0 floor of
+ * @sveltesentio/ui, the first release that spaces expanded toasts by the
+ * Toaster gap (#648), runs the Toaster component tests.
  */
 export const FLOORED_PEERS = Object.freeze([
 	'svelte',
@@ -39,6 +41,7 @@ export const FLOORED_PEERS = Object.freeze([
 	'vite',
 	'typescript',
 	'layerchart',
+	'svelte-sonner',
 ]);
 
 const WORKSPACE_FILE = 'pnpm-workspace.yaml';
