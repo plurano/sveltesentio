@@ -5,7 +5,7 @@
 
 <!-- markdownlint-capture -->
 <!-- markdownlint-disable MD013 -->
-# golusoris/sveltesentio Agent Operating Harness
+# plurano/sveltesentio Agent Operating Harness
 
 Before concluding any turn:
 
@@ -18,7 +18,7 @@ Pass = exit 0. Signed Ed25519 Exit-0 receipt only from `praetorctl gate run`; re
 
 ## Core Directives & Invariants
 
-Adopted check = coverage state + catalog path; else audit scanner; else `unknown`. Gates = (none: no generated `make verify-all`, no praetor `lefthook.yml`); edits not reflected.
+Adopted check = coverage state + catalog path; else audit scanner; else `unknown`. Gates = (repository-owned `make verify-all` (unread) + repository-owned `lefthook.yml` (unread)); edits not reflected. Adopted-check cells credit generated gates only.
 
 | Invariant | Rule | Adopted check | On fail |
 | :--- | :--- | :--- | :--- |
@@ -60,7 +60,7 @@ Adopted check = coverage state + catalog path; else audit scanner; else `unknown
 
 4. **SARIF diagnostic distillation.** Compiler/linter errors -> distill to $\le 1,500$ tokens ($< 60$ lines): top 3 root-cause failures with file/line pointers; full SARIF logs -> ephemeral storage.
 
-5. **No evasion.** Never attempt `--no-verify`, `LEFTHOOK=0`, or modifying `.git/hooks`. Adoption installed no hooks here (`lefthook.yml` not praetor-written, or `git-hooks` declined). Adoption adds no server-side `praetorctl` gate run. Scaffolded CI: `.github/workflows/praetor-docs.yml` runs step `Stop on a draft pull request`, `node tools/markdownlint/verify.mjs ${BASE:+--changed-since "$BASE"}`, step `Verify figures`; `.github/workflows/reuse.yml` runs step `Stop on a draft pull request`, step `reuse lint`.
+5. **No evasion.** Never attempt `--no-verify`, `LEFTHOOK=0`, or modifying `.git/hooks`. Adoption installed no hooks here (`lefthook.yml` not praetor-written, or `git-hooks` declined). Adoption adds no server-side `praetorctl` gate run. Scaffolded CI: `.github/workflows/praetor-docs.yml` runs step `Stop on a draft pull request`, `node tools/markdownlint/verify.mjs ${BASE:+--changed-since "$BASE"}`, step `Verify figures`; `.github/workflows/reuse.yml` runs no command of its own, only the actions `plurano/horistes/.github/workflows/licence.yml@5a2700ef8898bc377f0f9d13d5c95abf54f0fa4c`.
 
 6. **Anti-loop interception.** Same AST diff + error category repeats $\ge 3$ times -> halt immediately. Re-evaluate design; no micro-textual retries.
 
@@ -111,7 +111,7 @@ make verify-all
 
 ## What this repo is
 
-pnpm monorepo, 19 `@sveltesentio/*` packages. SvelteKit analog of golusoris/golusoris. Svelte 5 runes + TypeScript. Compliance: ASVS L2, WCAG 2.2 AA, SLSA L2 (#280 tracks L3), EU CRA, EU AI Act. Pointers: [docs/principles.md](../docs/principles.md) (§2), [docs/ux-principles.md](../docs/ux-principles.md) (§3).
+pnpm monorepo, 19 `@sveltesentio/*` packages. SvelteKit analog of plurano/golusoris. Svelte 5 runes + TypeScript. Compliance: ASVS L2, WCAG 2.2 AA, SLSA L2 (#280 tracks L3), EU CRA, EU AI Act. Pointers: [docs/principles.md](../docs/principles.md) (§2), [docs/ux-principles.md](../docs/ux-principles.md) (§3).
 
 ## HISS in this repository
 

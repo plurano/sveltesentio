@@ -161,7 +161,7 @@ private scratch-link policy.
 2 recorded infractions; audit forbids growth.
 
 [praetor-hiss-badge]: https://img.shields.io/badge/Standards-HISS%20Adopted%20(2%20baselined)-yellow
-[praetor-hiss-agents]: https://github.com/golusoris/sveltesentio/blob/HEAD/AGENTS.md
-[praetor-docs-badge]: https://github.com/golusoris/sveltesentio/actions/workflows/praetor-docs.yml/badge.svg
-[praetor-docs-runs]: https://github.com/golusoris/sveltesentio/actions/workflows/praetor-docs.yml
+[praetor-hiss-agents]: https://github.com/plurano/sveltesentio/blob/HEAD/AGENTS.md
+[praetor-docs-badge]: https://github.com/plurano/sveltesentio/actions/workflows/praetor-docs.yml/badge.svg
+[praetor-docs-runs]: https://github.com/plurano/sveltesentio/actions/workflows/praetor-docs.yml
 <!-- praetor:readme-governance:end -->

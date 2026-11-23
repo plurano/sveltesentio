@@ -1,7 +1,7 @@
 ---
 version: 1
 repository:
-  owner: golusoris
+  owner: plurano
   name: sveltesentio
   visibility: public
   description: ''
