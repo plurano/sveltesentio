@@ -1,6 +1,7 @@
 // Component-render tests verifying that `toastPreset(...).toaster` delivers
 // preset sizing, toaster min-width, stacking gap, viewport offset, and action
 // button target-size floor to a real mounted `svelte-sonner` `<Toaster>` (ADR-0016, #643).
+// Also verifies per-toast expanded-stack `--offset` follows the preset `gap` (#648).
 import { render } from '@testing-library/svelte';
 import { Toaster, toast } from 'svelte-sonner';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -64,6 +65,16 @@ async function mountActionToast(container: HTMLElement, title: string): Promise<
 		throw new Error(`expected [data-sonner-toast] "${title}" to mount`);
 	}
 	return { id, li };
+}
+
+/** Issues a plain toast with `title` and resolves its id and mounted element. */
+async function mountPlainToast(container: HTMLElement, title: string): Promise<MountedToast> {
+	const id = toast(title);
+	const element = await waitForToast(container, '[data-sonner-toast]', title);
+	if (element === null) {
+		throw new Error(`plain toast "${title}" did not mount`);
+	}
+	return { id, li: element };
 }
 
 describe('<Toaster {...toastPreset().toaster}>', () => {
@@ -155,5 +166,37 @@ describe('<Toaster {...toastPreset().toaster}>', () => {
 
 		toast.dismiss(id);
 		unmount();
+	});
+
+	it('applies 10foot preset gap to expanded-stack --offset with newest toast at 0px', async () => {
+		const p = toastPreset('10foot');
+		const { container, unmount } = render(Toaster, { ...p.toaster });
+		const older = await mountPlainToast(container, 'probe 10foot toast A');
+		const newest = await mountPlainToast(container, 'probe 10foot toast B');
+
+		expect(newest.li.style.getPropertyValue('--offset')).toBe('0px');
+		expect(older.li.style.getPropertyValue('--offset')).toBe('18px');
+		expect(older.li.style.getPropertyValue('--offset')).toBe(`${p.toaster.gap}px`);
+
+		toast.dismiss(older.id);
+		toast.dismiss(newest.id);
+		unmount();
+	});
+
+	it('applies handheld preset gap to expanded-stack --offset instead of fixed 14px', async () => {
+		const preset = toastPreset('handheld');
+		expect(preset.toaster.gap).not.toBe(18);
+		expect(preset.toaster.gap).not.toBe(14);
+
+		const view = render(Toaster, { ...preset.toaster });
+		const first = await mountPlainToast(view.container, 'probe handheld toast A');
+		const second = await mountPlainToast(view.container, 'probe handheld toast B');
+
+		expect(first.li.style.getPropertyValue('--offset')).toBe(`${preset.toaster.gap}px`);
+		expect(second.li.style.getPropertyValue('--offset')).toBe('0px');
+
+		toast.dismiss(first.id);
+		toast.dismiss(second.id);
+		view.unmount();
 	});
 });
