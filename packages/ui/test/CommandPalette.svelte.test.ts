@@ -3,13 +3,16 @@
 // The component is a thin view over the pure `CommandRegistry`; here we mount it
 // open with a real registry and drive it through the DOM.
 import { fireEvent, render, waitFor, within } from '@testing-library/svelte';
-import { tick } from 'svelte';
 import { describe, expect, it, vi } from 'vitest';
 import { requireAt } from '@sveltesentio/testing';
 import CommandPalette from '../src/cmd/CommandPalette.svelte';
 import { CommandRegistry, type Command } from '../src/cmd/registry.js';
 import { expectNoAxeViolations } from './axe-helper.js';
-import { flushQueuedDialogClose } from './dialog-stub.js';
+import {
+	expectNativeOpenDialog,
+	expectReopenSurvivesQueuedClose,
+	reopenDialog,
+} from './dialog-assertions.js';
 
 function makeRegistry(extra: Partial<Record<string, () => void>> = {}): {
 	registry: CommandRegistry;
@@ -37,6 +40,28 @@ function renderOpen() {
 	const { registry, runs } = makeRegistry();
 	const result = render(CommandPalette, { registry, open: true });
 	return { ...result, runs };
+}
+
+type PaletteRender = ReturnType<typeof renderOpen>;
+
+async function openFromOpener(): Promise<{
+	opener: HTMLButtonElement;
+	getByRole: PaletteRender['getByRole'];
+	queryByRole: PaletteRender['queryByRole'];
+}> {
+	const { registry } = makeRegistry();
+	const opener = document.createElement('button');
+	opener.type = 'button';
+	document.body.append(opener);
+	opener.focus();
+
+	const { getByRole, queryByRole, rerender } = render(CommandPalette, {
+		registry,
+		open: false,
+	});
+	await rerender({ open: true });
+	await waitFor(() => expect(getByRole('combobox')).toHaveFocus());
+	return { opener, getByRole, queryByRole };
 }
 
 describe('<CommandPalette>', () => {
@@ -189,25 +214,11 @@ describe('<CommandPalette>', () => {
 
 	it('renders a native DIALOG element with the open attribute while open', () => {
 		const { container } = renderOpen();
-		const native = container.querySelector('dialog');
-		expect(native).not.toBeNull();
-		expect(native?.tagName).toBe('DIALOG');
-		expect(native).toHaveAttribute('open');
+		expectNativeOpenDialog(container);
 	});
 
 	it('returns focus to the element focused before open after Escape', async () => {
-		const { registry } = makeRegistry();
-		const opener = document.createElement('button');
-		opener.type = 'button';
-		document.body.append(opener);
-		opener.focus();
-
-		const { getByRole, queryByRole, rerender } = render(CommandPalette, {
-			registry,
-			open: false,
-		});
-		await rerender({ open: true });
-		await waitFor(() => expect(getByRole('combobox')).toHaveFocus());
+		const { opener, queryByRole } = await openFromOpener();
 
 		await fireEvent.keyDown(window, { key: 'Escape' });
 		await waitFor(() => expect(queryByRole('dialog')).toBeNull());
@@ -216,21 +227,9 @@ describe('<CommandPalette>', () => {
 	});
 
 	it('returns focus to the element focused before open after Enter runs a command', async () => {
-		const { registry } = makeRegistry();
-		const opener = document.createElement('button');
-		opener.type = 'button';
-		document.body.append(opener);
-		opener.focus();
+		const { opener, getByRole, queryByRole } = await openFromOpener();
 
-		const { getByRole, queryByRole, rerender } = render(CommandPalette, {
-			registry,
-			open: false,
-		});
-		await rerender({ open: true });
-		const input = getByRole('combobox');
-		await waitFor(() => expect(input).toHaveFocus());
-
-		await fireEvent.keyDown(input, { key: 'Enter' });
+		await fireEvent.keyDown(getByRole('combobox'), { key: 'Enter' });
 		await waitFor(() => expect(queryByRole('dialog')).toBeNull());
 		expect(opener).toHaveFocus();
 		opener.remove();
@@ -244,23 +243,13 @@ describe('<CommandPalette>', () => {
 	});
 
 	it('leaves a single dialog node after toggling open twice quickly (boundary)', async () => {
-		const { registry } = makeRegistry();
-		const { rerender, container } = render(CommandPalette, { registry, open: true });
-		await rerender({ open: false });
-		await rerender({ open: true });
+		const { rerender, container } = renderOpen();
+		await reopenDialog(rerender);
 		await waitFor(() => expect(container.querySelectorAll('dialog')).toHaveLength(1));
 	});
 
 	it('keeps the reopened palette open when the unmounted dialog fires its queued close (boundary)', async () => {
-		const { registry } = makeRegistry();
-		const { rerender, container } = render(CommandPalette, { registry, open: true });
-		await rerender({ open: false });
-		await rerender({ open: true });
-		const replacement = container.querySelector('dialog');
-		expect(replacement).toHaveAttribute('open');
-		await flushQueuedDialogClose();
-		await tick();
-		expect(container.querySelector('dialog')).toBe(replacement);
-		expect(replacement).toHaveAttribute('open');
+		const { rerender, container } = renderOpen();
+		await expectReopenSurvivesQueuedClose(rerender, container);
 	});
 });
