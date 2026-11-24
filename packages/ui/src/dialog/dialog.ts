@@ -66,3 +66,27 @@ export function nextTrapTarget(
 	if (shift) return index === 0 ? last : elements[index - 1];
 	return index === elements.length - 1 ? first : elements[index + 1];
 }
+
+/**
+ * Lift `node` into the browser top layer via `showModal()`, schedule `focusInitial`
+ * in a microtask, and return the teardown callback.
+ *
+ * `focusInitial` runs in a microtask so it fires after top-layer insertion:
+ * `showModal()` runs the HTML dialog focusing steps synchronously and may pick
+ * another focusable descendant before the caller moves focus to its target.
+ *
+ * Cleanup calls `node.close()` while `node.open` holds so the dialog leaves the
+ * top layer cleanly before Svelte unmounts the element, then restores focus to
+ * the `HTMLElement` that was active before opening.
+ */
+export function liftIntoTopLayer(node: HTMLDialogElement, focusInitial: () => void): () => void {
+	let returnFocus =
+		document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
+	if (!node.open) node.showModal();
+	queueMicrotask(focusInitial);
+	return () => {
+		if (node.open) node.close();
+		returnFocus?.focus();
+		returnFocus = undefined;
+	};
+}

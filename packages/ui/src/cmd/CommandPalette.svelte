@@ -18,6 +18,8 @@ Plain `tsc` does not type-check `.svelte`; the typed, tested logic lives in
 `./registry.ts` (search/rank) and `./keybinding.ts` (the `$mod+K` keymap).
 -->
 <script lang="ts">
+	import TopLayerDialog from '../dialog/TopLayerDialog.svelte';
+	import { liftIntoTopLayer } from '../dialog/dialog.js';
 	import { CommandRegistry, type Command } from './registry.js';
 	import { matchesShortcut } from './keybinding.js';
 
@@ -45,7 +47,6 @@ Plain `tsc` does not type-check `.svelte`; the typed, tested logic lives in
 	let query = $state('');
 	let activeIndex = $state(0);
 	let modalDialog = $state<HTMLDialogElement | null>(null);
-	let returnFocus: HTMLElement | undefined;
 
 	const results = $derived(registry.search(query));
 	const listId = $derived(`${idBase}-list`);
@@ -112,24 +113,13 @@ Plain `tsc` does not type-check `.svelte`; the typed, tested logic lives in
 		clampActive();
 	});
 
-	// On open: remember the prior focus, lift the dialog into the top layer and
-	// move focus to the search input (the dialog focusing steps may pick another
-	// element). On close: leave the top layer before the node unmounts, then
-	// restore the prior focus.
+	// Move focus to the search input once the dialog enters the top layer.
 	$effect(() => {
 		const node = modalDialog;
 		if (!open || !node) return;
-		returnFocus =
-			document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
-		if (!node.open) node.showModal();
-		queueMicrotask(() => {
+		return liftIntoTopLayer(node, () => {
 			node.querySelector<HTMLInputElement>('input')?.focus();
 		});
-		return () => {
-			if (node.open) node.close();
-			returnFocus?.focus();
-			returnFocus = undefined;
-		};
 	});
 
 	function labelFor(command: Command): string {
@@ -140,8 +130,8 @@ Plain `tsc` does not type-check `.svelte`; the typed, tested logic lives in
 <svelte:window onkeydown={onWindowKeydown} />
 
 {#if open}
-	<dialog
-		bind:this={modalDialog}
+	<TopLayerDialog
+		bind:node={modalDialog}
 		class="ssentio-cmd__dialog"
 		aria-label="Command palette"
 		aria-modal="true"
@@ -201,34 +191,16 @@ Plain `tsc` does not type-check `.svelte`; the typed, tested logic lives in
 				{/if}
 			</ul>
 		</div>
-	</dialog>
+	</TopLayerDialog>
 {/if}
 
 <style>
-	.ssentio-cmd__dialog {
-		position: fixed;
-		inset: 0;
-		inline-size: 100%;
-		block-size: 100%;
-		max-inline-size: none;
-		max-block-size: none;
-		margin: 0;
-		padding: 0;
-		border: 0;
-		background: transparent;
-		color: inherit;
-		overflow: visible;
-	}
-
-	.ssentio-cmd__dialog[open] {
+	/* `dialog` keeps specificity (0,2,1) above TopLayerDialog's scoped `padding: 0` (0,2,0). */
+	:global(dialog.ssentio-cmd__dialog[open]) {
 		display: flex;
 		justify-content: center;
 		align-items: flex-start;
 		padding-block-start: 12vh;
-	}
-
-	.ssentio-cmd__dialog::backdrop {
-		background: transparent;
 	}
 
 	.ssentio-cmd__dismiss {
