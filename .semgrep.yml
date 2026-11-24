@@ -49,8 +49,7 @@ rules:
                   - pattern: 'spawnSync(..., {..., shell: $S, ...})'
                   - pattern: 'execFile(..., {..., shell: $S, ...})'
                   - pattern: 'execFileSync(..., {..., shell: $S, ...})'
-          # Namespace, default, require or dynamic-import binding: the call
-          # goes through it.
+          # Namespace, default or require binding: the call goes through it.
           - patterns:
               - pattern-either:
                   - pattern-inside: |
