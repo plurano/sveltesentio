@@ -51,6 +51,11 @@ interface GateOrderRow {
 	readonly expectedCalls: readonly string[];
 }
 
+interface RecordedProbe {
+	readonly probe: SockmapProbe;
+	readonly calls: readonly string[];
+}
+
 const PIN_PATH = DEFAULT_PIN_PATH;
 const CGROUP_MATRIX_RELEASE = '6.8.0-1015-azure';
 const CGROUP_REASON =
@@ -285,15 +290,39 @@ async function expectedHostGate(): Promise<HostGate> {
 	}
 }
 
+/**
+ * Probe `release` on Linux with both {@link CGROUP_V2_MARKER} and
+ * {@link PIN_PATH} marked reachable, returning the probe outcome and recorded
+ * filesystem checks.
+ */
+async function probeRelease(release: string): Promise<RecordedProbe> {
+	const { exists, calls } = recordingExists([CGROUP_V2_MARKER, PIN_PATH]);
+	const probe = await probeSockmap({
+		platform: 'linux',
+		kernelRelease: release,
+		pinPath: PIN_PATH,
+		exists,
+	});
+	return { probe, calls };
+}
+
+/**
+ * Assert `probe` degraded to `af_unix` for `reason` without consulting any
+ * filesystem path.
+ */
+function expectDegraded(probe: SockmapProbe, calls: readonly string[], reason: string): void {
+	expect(probe).toEqual({
+		available: false,
+		degradeTo: 'af_unix',
+		reason,
+	});
+	expect(resolveSockmapTier(probe)).toBe('af_unix');
+	expect(calls).toEqual([]);
+}
+
 describe('probeSockmap kernel release matrix', () => {
 	it.each(AVAILABLE_KERNEL_ROWS)('accepts $release ($label)', async (row) => {
-		const { exists, calls } = recordingExists([CGROUP_V2_MARKER, PIN_PATH]);
-		const probe = await probeSockmap({
-			platform: 'linux',
-			kernelRelease: row.release,
-			pinPath: PIN_PATH,
-			exists,
-		});
+		const { probe, calls } = await probeRelease(row.release);
 		expect(probe).toEqual({
 			available: true,
 			pinPath: PIN_PATH,
@@ -304,37 +333,13 @@ describe('probeSockmap kernel release matrix', () => {
 	});
 
 	it.each(BELOW_MIN_KERNEL_ROWS)('degrades $release ($label)', async (row) => {
-		const { exists, calls } = recordingExists([CGROUP_V2_MARKER, PIN_PATH]);
-		const probe = await probeSockmap({
-			platform: 'linux',
-			kernelRelease: row.release,
-			pinPath: PIN_PATH,
-			exists,
-		});
-		expect(probe).toEqual({
-			available: false,
-			degradeTo: 'af_unix',
-			reason: row.reason,
-		});
-		expect(resolveSockmapTier(probe)).toBe('af_unix');
-		expect(calls).toEqual([]);
+		const { probe, calls } = await probeRelease(row.release);
+		expectDegraded(probe, calls, row.reason);
 	});
 
 	it.each(UNPARSEABLE_KERNEL_ROWS)('rejects unparseable $label', async (row) => {
-		const { exists, calls } = recordingExists([CGROUP_V2_MARKER, PIN_PATH]);
-		const probe = await probeSockmap({
-			platform: 'linux',
-			kernelRelease: row.release,
-			pinPath: PIN_PATH,
-			exists,
-		});
-		expect(probe).toEqual({
-			available: false,
-			degradeTo: 'af_unix',
-			reason: `unparseable kernel release ${JSON.stringify(row.release)}`,
-		});
-		expect(resolveSockmapTier(probe)).toBe('af_unix');
-		expect(calls).toEqual([]);
+		const { probe, calls } = await probeRelease(row.release);
+		expectDegraded(probe, calls, `unparseable kernel release ${JSON.stringify(row.release)}`);
 	});
 });
 
