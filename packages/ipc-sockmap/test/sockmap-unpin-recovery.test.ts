@@ -3,12 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ProblemError } from '@sveltesentio/core';
-import {
-	createIpcClient,
-	type ConnectFn,
-	type IpcClient,
-	type IpcClientOptions,
-} from '../src/client.js';
+import { createIpcClient, type ConnectFn, type IpcClient } from '../src/client.js';
 import {
 	CGROUP_V2_MARKER,
 	probeSockmap,
@@ -17,7 +12,12 @@ import {
 	type KernelVersion,
 	type SockmapProbe,
 } from '../src/sockmap.js';
-import { detectTransport, encodeFrame, type AccessFn } from '../src/transport.js';
+import {
+	detectTransport,
+	encodeFrame,
+	type AccessFn,
+	type DetectTransportOptions,
+} from '../src/transport.js';
 import { FakeSocket } from './fake-socket.js';
 
 const SOCK = '/run/golusoris/api.sock';
@@ -30,6 +30,11 @@ interface MutablePaths {
 	readonly exists: ExistsFn;
 	readonly add: (p: string) => void;
 	readonly remove: (p: string) => void;
+}
+
+interface MutableTransport {
+	readonly paths: MutablePaths;
+	readonly opts: DetectTransportOptions;
 }
 
 interface ConnectedPeer {
@@ -84,18 +89,45 @@ function probeLinux(exists: ExistsFn, pinPath: string = MAP): Promise<SockmapPro
 	});
 }
 
+/** Assert `probe` reports sockmap available at `pinPath` on {@link EXPECTED_KERNEL}. */
+function expectSockmapAvailable(probe: SockmapProbe, pinPath: string = MAP): void {
+	expect(probe).toEqual({
+		available: true,
+		pinPath,
+		kernel: EXPECTED_KERNEL,
+	});
+	expect(resolveSockmapTier(probe)).toBe('sockmap');
+}
+
+/** Assert `probe` degraded to `af_unix` because `pinPath` is absent. */
+function expectPinAbsent(probe: SockmapProbe, pinPath: string = MAP): void {
+	expect(probe).toEqual({
+		available: false,
+		degradeTo: 'af_unix',
+		reason: pinAbsentReason(pinPath),
+	});
+	expect(resolveSockmapTier(probe)).toBe('af_unix');
+}
+
+/**
+ * Build {@link mutablePaths} paired with {@link DetectTransportOptions} wired
+ * to `SOCK` and `MAP`.
+ */
+function mutableTransport(initial: readonly string[]): MutableTransport {
+	const paths = mutablePaths(initial);
+	return {
+		paths,
+		opts: { socketPath: SOCK, bpfMapPath: MAP, access: paths.access },
+	};
+}
+
 /**
  * Wire a {@link FakeSocket} connector and {@link mutablePaths} seam so tests
  * can open sequential clients while flipping path reachability between them.
  */
 function createClientHarness(initial: readonly string[]): ClientHarness {
-	const paths = mutablePaths(initial);
+	const { paths, opts } = mutableTransport(initial);
 	const connectCalls: { path: string }[] = [];
-	const baseOptions: Omit<IpcClientOptions, 'connect'> = {
-		socketPath: SOCK,
-		bpfMapPath: MAP,
-		access: paths.access,
-	};
 	return {
 		paths,
 		connectCalls,
@@ -105,7 +137,7 @@ function createClientHarness(initial: readonly string[]): ClientHarness {
 				connectCalls.push(options);
 				return socket;
 			};
-			const client = await createIpcClient({ ...baseOptions, connect });
+			const client = await createIpcClient({ ...opts, connect });
 			return { client, socket };
 		},
 	};
@@ -156,30 +188,15 @@ describe('probeSockmap across runtime unpin', () => {
 		const paths = mutablePaths([CGROUP_V2_MARKER, MAP]);
 
 		const initial = await probeLinux(paths.exists);
-		expect(initial).toEqual({
-			available: true,
-			pinPath: MAP,
-			kernel: EXPECTED_KERNEL,
-		});
-		expect(resolveSockmapTier(initial)).toBe('sockmap');
+		expectSockmapAvailable(initial);
 
 		paths.remove(MAP);
 		const unpinned = await probeLinux(paths.exists);
-		expect(unpinned).toEqual({
-			available: false,
-			degradeTo: 'af_unix',
-			reason: pinAbsentReason(MAP),
-		});
-		expect(resolveSockmapTier(unpinned)).toBe('af_unix');
+		expectPinAbsent(unpinned);
 
 		paths.add(MAP);
 		const recovered = await probeLinux(paths.exists);
-		expect(recovered).toEqual({
-			available: true,
-			pinPath: MAP,
-			kernel: EXPECTED_KERNEL,
-		});
-		expect(resolveSockmapTier(recovered)).toBe('sockmap');
+		expectSockmapAvailable(recovered);
 	});
 
 	it('reads live state after unpin and re-pin between probes (boundary)', async () => {
@@ -190,12 +207,7 @@ describe('probeSockmap across runtime unpin', () => {
 		paths.add(MAP);
 
 		const after = await probeLinux(paths.exists);
-		expect(after).toEqual({
-			available: true,
-			pinPath: MAP,
-			kernel: EXPECTED_KERNEL,
-		});
-		expect(resolveSockmapTier(after)).toBe('sockmap');
+		expectSockmapAvailable(after);
 	});
 
 	it('stays available when an unrelated path is removed (negative)', async () => {
@@ -206,19 +218,13 @@ describe('probeSockmap across runtime unpin', () => {
 		paths.remove(otherPath);
 
 		const after = await probeLinux(paths.exists);
-		expect(after).toEqual({
-			available: true,
-			pinPath: MAP,
-			kernel: EXPECTED_KERNEL,
-		});
-		expect(resolveSockmapTier(after)).toBe('sockmap');
+		expectSockmapAvailable(after);
 	});
 });
 
 describe('detectTransport across runtime unpin', () => {
 	it('steps through sockmap, af_unix, and none as paths flip (positive)', async () => {
-		const paths = mutablePaths([MAP, SOCK]);
-		const opts = { socketPath: SOCK, bpfMapPath: MAP, access: paths.access };
+		const { paths, opts } = mutableTransport([MAP, SOCK]);
 
 		expect(await detectTransport(opts)).toBe('sockmap');
 
@@ -237,8 +243,7 @@ describe('detectTransport across runtime unpin', () => {
 	});
 
 	it('retains sockmap when unpinned and re-pinned between calls (boundary)', async () => {
-		const paths = mutablePaths([MAP, SOCK]);
-		const opts = { socketPath: SOCK, bpfMapPath: MAP, access: paths.access };
+		const { paths, opts } = mutableTransport([MAP, SOCK]);
 
 		expect(await detectTransport(opts)).toBe('sockmap');
 		paths.remove(MAP);
@@ -248,8 +253,7 @@ describe('detectTransport across runtime unpin', () => {
 
 	it('ignores unrelated path removal during tier detection (negative)', async () => {
 		const otherPath = '/run/golusoris/other.sock';
-		const paths = mutablePaths([MAP, SOCK, otherPath]);
-		const opts = { socketPath: SOCK, bpfMapPath: MAP, access: paths.access };
+		const { paths, opts } = mutableTransport([MAP, SOCK, otherPath]);
 
 		expect(await detectTransport(opts)).toBe('sockmap');
 		paths.remove(otherPath);
@@ -356,30 +360,15 @@ describe('real filesystem unpin and recovery', () => {
 
 	it('re-evaluates probeSockmap against real pin rm and writeFile (positive)', async () => {
 		const initial = await probeLinux(tempPinExists, pinPath);
-		expect(initial).toEqual({
-			available: true,
-			pinPath,
-			kernel: EXPECTED_KERNEL,
-		});
-		expect(resolveSockmapTier(initial)).toBe('sockmap');
+		expectSockmapAvailable(initial, pinPath);
 
 		await rm(pinPath);
 		const unpinned = await probeLinux(tempPinExists, pinPath);
-		expect(unpinned).toEqual({
-			available: false,
-			degradeTo: 'af_unix',
-			reason: pinAbsentReason(pinPath),
-		});
-		expect(resolveSockmapTier(unpinned)).toBe('af_unix');
+		expectPinAbsent(unpinned, pinPath);
 
 		await writeFile(pinPath, '');
 		const recovered = await probeLinux(tempPinExists, pinPath);
-		expect(recovered).toEqual({
-			available: true,
-			pinPath,
-			kernel: EXPECTED_KERNEL,
-		});
-		expect(resolveSockmapTier(recovered)).toBe('sockmap');
+		expectSockmapAvailable(recovered, pinPath);
 	});
 
 	it('sees sockmap when pin is unlinked and recreated before probe (boundary)', async () => {
