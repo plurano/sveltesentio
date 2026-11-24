@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const REPO_ROOT = fileURLToPath(new URL('..', import.meta.url));
 const TURBO_ROOT_PREFIX = '$TURBO_ROOT$/';
+export const GIT_DIFF_DEADLINE_MS = 30_000;
 
 // Files that match DOCS_ONLY_PATTERNS but feed a check in the lint job, so a change to
 // them alone must still run it: a version guide's `codemods` count and the codemods
@@ -245,12 +246,17 @@ export function analyzeChanges(changedFiles, readers) {
 }
 
 /**
- * Gets git changed files between base and head.
+ * Gets git changed files between base and head, stopping git after `deadlineMs`.
  * @param {string} baseRef
  * @param {string} headRef
+ * @param {number} [deadlineMs]
  * @returns {string[]}
  */
-export function getGitDiffFiles(baseRef = 'origin/main', headRef = 'HEAD') {
+export function getGitDiffFiles(
+	baseRef = 'origin/main',
+	headRef = 'HEAD',
+	deadlineMs = GIT_DIFF_DEADLINE_MS,
+) {
 	const range = `${baseRef}...${headRef}`;
 	try {
 		// An argument vector, never a shell string: the refs come from the command line
@@ -259,6 +265,7 @@ export function getGitDiffFiles(baseRef = 'origin/main', headRef = 'HEAD') {
 		const output = execFileSync('git', ['diff', '--name-only', '--end-of-options', range], {
 			encoding: 'utf8',
 			stdio: ['pipe', 'pipe', 'pipe'],
+			timeout: deadlineMs,
 		});
 		return output
 			.split('\n')
@@ -267,9 +274,12 @@ export function getGitDiffFiles(baseRef = 'origin/main', headRef = 'HEAD') {
 	} catch (error) {
 		// A diff against another range would select the wrong packages, so a bad ref stops the job.
 		const stderr = String(error?.stderr ?? '').trim();
-		throw new Error(`ci-affected: git diff ${range} failed${stderr ? `: ${stderr}` : ''}`, {
-			cause: error,
-		});
+		let message = `ci-affected: git diff ${range} failed`;
+		if (stderr) message += `: ${stderr}`;
+		if (error?.code === 'ETIMEDOUT') {
+			message += ` (timed out after ${deadlineMs} ms)`;
+		}
+		throw new Error(message, { cause: error });
 	}
 }
 

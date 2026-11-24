@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { trackedFiles } from './git-tracked.mjs';
 
 const root = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 
@@ -12,13 +12,6 @@ const SOURCE_EXT = /\.(ts|mts|cts|js|mjs|cjs|svelte)$/i;
 // eslint flags that take no value. Any other flag is refused so a valued flag
 // (`--max-warnings 0`, `--ignore-pattern e2e`) never reads as a lint target.
 const VALUELESS_FLAGS = new Set(['--cache', '--fix']);
-
-/** Tracked files that match the given globs. */
-function tracked(...globs) {
-	return execFileSync('git', ['ls-files', '--', ...globs], { cwd: root, encoding: 'utf8' })
-		.split('\n')
-		.filter((file) => file !== '');
-}
 
 /**
  * @param {string | undefined} lintCommand
@@ -123,7 +116,7 @@ export function syncsBeforeEslint(lintCommand) {
 /** @param {string} pkgJsonPath repo-relative path to package.json */
 function trackedRelativeToPackage(pkgJsonPath) {
 	const prefix = pkgJsonPath.replace(/\/package\.json$/, '') + '/';
-	return tracked(prefix).map((path) => path.slice(prefix.length));
+	return trackedFiles(root, [prefix]).map((path) => path.slice(prefix.length));
 }
 
 /** @param {string} text package.json file contents */
@@ -182,7 +175,7 @@ describe('unlintedDirs', () => {
 
 describe('workspace lint scripts cover every tracked source dir', () => {
 	it('every package and app calls eslint over all source dirs', () => {
-		const files = tracked('packages/*/package.json', 'apps/*/package.json');
+		const files = trackedFiles(root, ['packages/*/package.json', 'apps/*/package.json']);
 		assert.ok(files.length > 0, 'no package.json found');
 		const findings = [];
 		const fileCount = files.length;
@@ -206,7 +199,7 @@ describe('workspace lint scripts cover every tracked source dir', () => {
 	});
 
 	it('every SvelteKit app syncs before eslint', () => {
-		const files = tracked('packages/*/package.json', 'apps/*/package.json');
+		const files = trackedFiles(root, ['packages/*/package.json', 'apps/*/package.json']);
 		const kitApps = files.filter((pkgJsonPath) =>
 			trackedRelativeToPackage(pkgJsonPath).some((file) => file.startsWith('src/routes/')),
 		);

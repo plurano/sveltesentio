@@ -6,6 +6,8 @@ import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { analyzeChanges, PACKAGE_DIRECTORY_MAP } from '../../../scripts/ci-affected.mjs';
 
+const CLI_DEADLINE_MS = 60_000;
+
 function expectNoCodeChanges(result: ReturnType<typeof analyzeChanges>) {
 	expect(result.allAffected).toBe(false);
 	expect(result.hasCodeChanges).toBe(false);
@@ -226,6 +228,7 @@ describe('scripts/ci-affected.mjs runs its CLI only as the entry point', () => {
 		const stdout = execFileSync(process.execPath, [entry, ...args], {
 			encoding: 'utf8',
 			env: { ...process.env, GITHUB_OUTPUT: outputFile },
+			timeout: CLI_DEADLINE_MS,
 		});
 		return { stdout, githubOutput: readFileSync(outputFile, 'utf8') };
 	}

@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { getFileInfo } from 'prettier';
 import { analyzeChanges } from './ci-affected.mjs';
+import { trackedFiles } from './git-tracked.mjs';
 
 const thisFile = fileURLToPath(import.meta.url);
 const root = join(fileURLToPath(new URL('.', import.meta.url)), '..');
@@ -13,7 +13,6 @@ const selfPath = relative(root, thisFile).replaceAll('\\', '/');
 
 const IO_TIMEOUT_MS = 10_000;
 const CLASS_CAP = 500;
-const TRACKED_CAP = 10_000;
 
 const IGNORE_PATHS = [join(root, '.gitignore'), join(root, '.prettierignore')];
 
@@ -74,23 +73,6 @@ const RECORDED_MANAGED = Object.freeze([
 ]);
 
 /**
- * Lists tracked repository files matching optional git pathspecs.
- * @param {...string} globs
- * @returns {string[]}
- */
-function tracked(...globs) {
-	const args = globs.length > 0 ? ['ls-files', '-z', '--', ...globs] : ['ls-files', '-z'];
-	const out = execFileSync('git', args, {
-		cwd: root,
-		encoding: 'utf8',
-		timeout: IO_TIMEOUT_MS,
-	});
-	const files = out.split('\0').filter((file) => file !== '');
-	assert.ok(files.length <= TRACKED_CAP, `git ls-files exceeded cap ${TRACKED_CAP}`);
-	return files;
-}
-
-/**
  * Extracts non-comment, non-blank paths from the praetor-managed block in `.prettierignore`.
  * @param {string} ignoreText
  * @returns {string[]}
@@ -114,7 +96,7 @@ function parseManagedBlock(ignoreText) {
  */
 function discoverPinnedClasses() {
 	const ignoreText = readFileSync(join(root, '.prettierignore'), 'utf8');
-	const allTracked = tracked();
+	const allTracked = trackedFiles(root);
 	const managed = parseManagedBlock(ignoreText);
 	const recorded = [...RECORDED_MANAGED];
 	const projection = allTracked.filter((file) =>
@@ -188,7 +170,7 @@ describe('pinned artifact discovery', () => {
 	});
 
 	it('keeps RECORDED_MANAGED unique and tracked in git', () => {
-		const trackedSet = new Set(tracked());
+		const trackedSet = new Set(trackedFiles(root));
 		const missing = RECORDED_MANAGED.filter((file) => !trackedSet.has(file));
 		assert.deepEqual(missing, [], `RECORDED_MANAGED untracked: ${missing.join(', ')}`);
 		assert.equal(

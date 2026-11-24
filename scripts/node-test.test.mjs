@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, describe, it } from 'node:test';
+import { setTimeout as sleep } from 'node:timers/promises';
 
 import { matchTests, runTests } from './node-test.mjs';
 
@@ -15,6 +16,20 @@ function fixture(name, body) {
 	mkdirSync(join(sub, 'cases'), { recursive: true });
 	writeFileSync(join(sub, 'cases', 'a.test.mjs'), `import { test } from 'node:test';\n${body}\n`);
 	return sub;
+}
+
+/** Whether the process `pid` still runs, polled for up to five seconds. */
+async function outlives(pid) {
+	for (let attempt = 0; attempt < 50; attempt += 1) {
+		try {
+			process.kill(pid, 0);
+		} catch (error) {
+			if (error.code === 'ESRCH') return false;
+			throw new Error(`probing pid ${pid} failed`, { cause: error });
+		}
+		await sleep(100);
+	}
+	return true;
 }
 
 describe('matchTests', () => {
@@ -42,5 +57,52 @@ describe('runTests', () => {
 
 	it('fails when no glob is given', () => {
 		assert.equal(runTests([], dir), 2);
+	});
+
+	it('passes when matched tests finish within the deadline', { timeout: 20_000 }, () => {
+		const sub = fixture('within-deadline', "test('ok', () => {});");
+		assert.equal(runTests(['cases/*.test.mjs'], sub, 60_000), 0);
+	});
+
+	// Without the deadline this run hangs; the message tells the deadline path
+	// from any other failure.
+	it('fails once a hung test runs past its deadline', { timeout: 20_000 }, (t) => {
+		const body = "test('hang', () => new Promise(() => { setTimeout(() => {}, 30_000); }));";
+		const sub = fixture('hang', body);
+		const errors = t.mock.method(console, 'error', () => {});
+		assert.equal(runTests(['cases/*.test.mjs'], sub, 500), 1);
+		assert.deepEqual(
+			errors.mock.calls.map((call) => call.arguments[0]),
+			['node-test: tests ran past the deadline of 500 ms'],
+		);
+	});
+
+	// Windows ends a timed-out child with TerminateProcess, which gives the runner
+	// no chance to stop its own child; this check needs a catchable signal.
+	const signals = process.platform === 'win32' ? 'Windows has no catchable kill signal' : false;
+	it(
+		'leaves no test process behind after the deadline',
+		{ timeout: 20_000, skip: signals },
+		async (t) => {
+			const body = [
+				"import { writeFileSync } from 'node:fs';",
+				"writeFileSync('pid.txt', String(process.pid));",
+				"test('hang', () => new Promise(() => { setTimeout(() => {}, 30_000); }));",
+			].join('\n');
+			const sub = fixture('orphan', body);
+			const errors = t.mock.method(console, 'error', () => {});
+			assert.equal(runTests(['cases/*.test.mjs'], sub, 1_000), 1);
+			assert.equal(errors.mock.callCount(), 1);
+			const pid = Number(readFileSync(join(sub, 'pid.txt'), 'utf8'));
+			assert.ok(Number.isSafeInteger(pid) && pid > 1, `fixture wrote pid ${pid}`);
+			assert.equal(await outlives(pid), false, `test process ${pid} outlived the runner`);
+		},
+	);
+
+	it('refuses a deadline that is not a positive safe integer', { timeout: 20_000 }, () => {
+		const sub = fixture('bad-deadline', "test('ok', () => {});");
+		for (const bad of [0, -1, 1.5, NaN]) {
+			assert.equal(runTests(['cases/*.test.mjs'], sub, bad), 2);
+		}
 	});
 });

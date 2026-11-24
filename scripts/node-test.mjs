@@ -9,6 +9,10 @@ import { spawnSync } from 'node:child_process';
 import { globSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
+// The CI Lint job's 10-minute limit is the tighter bound there; this one stops
+// a hung local or hook run (HISS-02).
+export const TEST_RUN_DEADLINE_MS = 20 * 60_000;
+
 /**
  * The sorted files that the globs match, relative to `cwd`.
  *
@@ -21,15 +25,21 @@ export function matchTests(patterns, cwd) {
 }
 
 /**
- * Runs the test files the globs match and returns the exit status.
+ * Runs the test files the globs match before `deadlineMs` elapses and returns
+ * the exit status.
  *
  * @param {string[]} patterns
  * @param {string} cwd
+ * @param {number} [deadlineMs]
  * @returns {number}
  */
-export function runTests(patterns, cwd) {
+export function runTests(patterns, cwd, deadlineMs = TEST_RUN_DEADLINE_MS) {
 	if (patterns.length === 0) {
 		console.error('node-test: no glob given');
+		return 2;
+	}
+	if (!Number.isSafeInteger(deadlineMs) || deadlineMs <= 0) {
+		console.error('node-test: deadline must be a positive whole number of milliseconds');
 		return 2;
 	}
 	const files = matchTests(patterns, cwd);
@@ -40,9 +50,21 @@ export function runTests(patterns, cwd) {
 	// An inherited NODE_TEST_CONTEXT turns the child into a reporter for a parent run, which exits 0.
 	const env = { ...process.env };
 	delete env.NODE_TEST_CONTEXT;
-	const result = spawnSync(process.execPath, ['--test', ...files], { cwd, env, stdio: 'inherit' });
+	// SIGTERM, not SIGKILL: the runner stops the per-file child it spawned only
+	// when it gets the chance, and a killed runner leaves that child running.
+	const result = spawnSync(process.execPath, ['--test', ...files], {
+		cwd,
+		env,
+		stdio: 'inherit',
+		timeout: deadlineMs,
+		killSignal: 'SIGTERM',
+	});
 	if (result.error) {
-		console.error(`node-test: ${result.error.message}`);
+		if (result.error.code === 'ETIMEDOUT') {
+			console.error(`node-test: tests ran past the deadline of ${deadlineMs} ms`);
+		} else {
+			console.error(`node-test: ${result.error.message}`);
+		}
 		return 1;
 	}
 	return result.status ?? 1;
