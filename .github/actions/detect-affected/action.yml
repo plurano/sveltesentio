@@ -1,0 +1,41 @@
+name: Detect affected packages and surfaces
+description: Runs scripts/ci-affected.mjs and exposes its change-scope outputs.
+
+# Shared by ci.yml (detect-changes) and portability.yml so the base-ref expression
+# and output contract live in one place. Callers check out full git history and
+# install workspace dependencies (prettier) before running this action.
+
+outputs:
+  all_affected:
+    description: Whether a shared surface or full-run event selected every package.
+    value: ${{ steps.changes.outputs.all_affected }}
+  has_code_changes:
+    description: Whether any package or gated surface needs code checks.
+    value: ${{ steps.changes.outputs.has_code_changes }}
+  turbo_filter:
+    description: Space-separated --filter arguments for turbo, or empty for a full run.
+    value: ${{ steps.changes.outputs.turbo_filter }}
+  affected_packages:
+    description: JSON array of affected workspace package names.
+    value: ${{ steps.changes.outputs.affected_packages }}
+  changed_files:
+    description: Count of changed files on pull requests, or 0 on full-run events.
+    value: ${{ steps.changes.outputs.changed_files }}
+  prettier_files:
+    description: Space-separated changed files Prettier formats when not all packages are affected.
+    value: ${{ steps.changes.outputs.prettier_files }}
+  has_stories:
+    description: Whether all packages are affected or an affected package has stories.
+    value: ${{ steps.changes.outputs.has_stories }}
+
+runs:
+  using: composite
+  steps:
+    - name: Detect affected packages and surfaces
+      id: changes
+      shell: bash
+      env:
+        CI_EVENT: ${{ github.event_name }}
+        BASE_REF: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || 'HEAD~1' }}
+        HEAD_REF: ${{ github.sha }}
+      run: node scripts/ci-affected.mjs

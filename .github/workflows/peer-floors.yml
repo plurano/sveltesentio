@@ -20,6 +20,7 @@ on:
       - 'pnpm-workspace.yaml'
       - 'scripts/pin-peer-floors.mjs'
       - '.github/workflows/peer-floors.yml'
+      - '.github/actions/pnpm-install/**'
   workflow_dispatch:
 
 permissions:
@@ -55,12 +56,12 @@ jobs:
         if: github.event.pull_request.draft != true
         with:
           node-version: '26'
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
-        if: github.event.pull_request.draft != true
       # The pin script imports semver, so the lockfile install comes first.
       - name: Install the locked dependencies
         if: github.event.pull_request.draft != true
-        run: pnpm install --frozen-lockfile
+        uses: ./.github/actions/pnpm-install
+        with:
+          store-cache: 'false'
       - name: Pin every peer to the lowest release of its range
         if: github.event.pull_request.draft != true
         run: node scripts/pin-peer-floors.mjs
