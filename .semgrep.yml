@@ -49,7 +49,8 @@ rules:
                   - pattern: 'spawnSync(..., {..., shell: $S, ...})'
                   - pattern: 'execFile(..., {..., shell: $S, ...})'
                   - pattern: 'execFileSync(..., {..., shell: $S, ...})'
-          # Namespace, default or require binding: the call goes through it.
+          # Namespace, default, require or dynamic-import binding: the call
+          # goes through it.
           - patterns:
               - pattern-either:
                   - pattern-inside: |
@@ -82,8 +83,9 @@ rules:
       with no deadline (HISS-02); pass `timeout` in the options object literal.
     patterns:
       - pattern-either:
-          # Named import, plain or aliased: $L is the local name of the
-          # child_process function, called bare or promisified.
+          # Named import or destructured require / dynamic import, plain or
+          # renamed: $L is the local name of the child_process function,
+          # called bare or promisified.
           - patterns:
               - pattern-either:
                   - patterns:
@@ -97,6 +99,28 @@ rules:
                       - pattern-inside: |
                           import { ..., $F as $L, ... } from '$MOD';
                           ...
+                      - metavariable-regex:
+                          metavariable: $F
+                          regex: ^(exec|execFile|execFileSync|execSync|fork|spawn|spawnSync)$
+                  - patterns:
+                      - pattern-either:
+                          - pattern-inside: |
+                              const { ..., $L, ... } = require('$MOD');
+                              ...
+                          - pattern-inside: |
+                              const { ..., $L, ... } = await import('$MOD');
+                              ...
+                      - metavariable-regex:
+                          metavariable: $L
+                          regex: ^(exec|execFile|execFileSync|execSync|fork|spawn|spawnSync)$
+                  - patterns:
+                      - pattern-either:
+                          - pattern-inside: |
+                              const { ..., $F: $L, ... } = require('$MOD');
+                              ...
+                          - pattern-inside: |
+                              const { ..., $F: $L, ... } = await import('$MOD');
+                              ...
                       - metavariable-regex:
                           metavariable: $F
                           regex: ^(exec|execFile|execFileSync|execSync|fork|spawn|spawnSync)$
@@ -137,7 +161,8 @@ rules:
                                   $X = $U.promisify($L);
                                   ...
                               - pattern: $X(...)
-          # Namespace, default or require binding: the call goes through it.
+          # Namespace, default, require or dynamic-import binding: the call
+          # goes through it.
           - patterns:
               - pattern-either:
                   - pattern-inside: |
@@ -148,6 +173,9 @@ rules:
                       ...
                   - pattern-inside: |
                       $CP = require('$MOD');
+                      ...
+                  - pattern-inside: |
+                      $CP = await import('$MOD');
                       ...
               - metavariable-regex:
                   metavariable: $F
