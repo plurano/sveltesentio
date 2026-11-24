@@ -4,6 +4,8 @@
 	import Button from '../button/Button.svelte';
 	import { assertCentreHit, waitForElement } from '../../test/top-layer-probe.js';
 
+	// story-covers: TopLayerDialog — the shared top-layer <dialog> shell that Dialog renders through (every story below opens it)
+
 	async function waitForPanelActive(canvasElement: HTMLElement): Promise<HTMLDialogElement> {
 		for (let i = 0; i < 50; i += 1) {
 			const modal = canvasElement.querySelector<HTMLDialogElement>('dialog');

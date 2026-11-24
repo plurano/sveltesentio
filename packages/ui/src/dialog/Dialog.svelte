@@ -18,7 +18,13 @@ A11y (WAI-ARIA dialog pattern):
 -->
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import { dialogContentClass, focusableElements, nextTrapTarget } from './dialog.js';
+	import TopLayerDialog from './TopLayerDialog.svelte';
+	import {
+		dialogContentClass,
+		focusableElements,
+		liftIntoTopLayer,
+		nextTrapTarget,
+	} from './dialog.js';
 
 	interface Props {
 		/** Whether the dialog is open (bindable). */
@@ -56,7 +62,6 @@ A11y (WAI-ARIA dialog pattern):
 
 	let modalDialog = $state<HTMLDialogElement | null>(null);
 	let panel = $state<HTMLDivElement | null>(null);
-	let returnFocus: HTMLElement | undefined;
 
 	function close(): void {
 		if (dismissible) open = false;
@@ -87,32 +92,22 @@ A11y (WAI-ARIA dialog pattern):
 		(target ?? panel).focus();
 	}
 
-	// On open: remember the prior focus, lift the dialog into the top layer and
-	// move focus into the panel (first focusable, else the panel itself). On
-	// close: leave the top layer before the node unmounts, then restore the prior
-	// focus. The microtask guards against the panel having unmounted before it runs.
+	// Focus the first focusable inside the panel (else the panel itself); guard in
+	// case the panel unmounted before the microtask runs.
 	$effect(() => {
 		const node = modalDialog;
 		if (!open || !node) return;
-		returnFocus =
-			document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
-		if (!node.open) node.showModal();
-		queueMicrotask(() => {
+		return liftIntoTopLayer(node, () => {
 			if (!panel) return;
 			const [firstFocusable] = focusableElements(panel);
 			(firstFocusable ?? panel).focus();
 		});
-		return () => {
-			if (node.open) node.close();
-			returnFocus?.focus();
-			returnFocus = undefined;
-		};
 	});
 </script>
 
 {#if open}
-	<dialog
-		bind:this={modalDialog}
+	<TopLayerDialog
+		bind:node={modalDialog}
 		class="ssentio-dialog__shell"
 		aria-modal="true"
 		aria-labelledby={titleId}
@@ -148,26 +143,5 @@ A11y (WAI-ARIA dialog pattern):
 				</footer>
 			{/if}
 		</div>
-	</dialog>
+	</TopLayerDialog>
 {/if}
-
-<style>
-	.ssentio-dialog__shell {
-		position: fixed;
-		inset: 0;
-		inline-size: 100%;
-		block-size: 100%;
-		max-inline-size: none;
-		max-block-size: none;
-		margin: 0;
-		padding: 0;
-		border: 0;
-		background: transparent;
-		color: inherit;
-		overflow: visible;
-	}
-
-	.ssentio-dialog__shell::backdrop {
-		background: transparent;
-	}
-</style>
