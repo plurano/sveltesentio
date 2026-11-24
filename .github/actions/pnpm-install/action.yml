@@ -1,0 +1,32 @@
+name: Install pnpm dependencies
+description: Optionally caches ~/.pnpm-store, sets up pnpm and installs locked dependencies.
+
+# Keeps the pnpm store cache key, the pnpm/action-setup pin and the frozen-lockfile
+# install in one place across this repository's workflows. actions/setup-node stays
+# in each caller, so each job states its Node version where it runs.
+# The reusable workflows (ci-sveltekit.yml and codeql.yml, both on workflow_call)
+# keep their own steps: a called workflow resolves ./.github/actions/... against
+# the caller's checkout, not this repository.
+
+inputs:
+  store-cache:
+    description: Restore and save ~/.pnpm-store with actions/cache.
+    required: false
+    default: 'true'
+
+runs:
+  using: composite
+  steps:
+    - name: Cache pnpm store
+      if: inputs.store-cache == 'true'
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.pnpm-store
+        key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+        restore-keys: ${{ runner.os }}-pnpm-
+    # Node.js 25 removes bundled Corepack; action-setup reads packageManager from package.json.
+    - name: Set up pnpm
+      uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+    - name: Install locked dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile

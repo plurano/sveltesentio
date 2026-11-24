@@ -59,24 +59,10 @@ jobs:
         with:
           node-version: '26'
       # ci-affected.mjs imports prettier to list the files the format check covers.
-      - &cache_pnpm
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.pnpm-store
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: ${{ runner.os }}-pnpm-
-      # Node.js 25 removes bundled Corepack; action-setup reads packageManager from package.json.
-      - &setup_pnpm
-        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
-      - &pnpm_install
-        run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/pnpm-install
       - name: Detect affected packages and surfaces
         id: changes
-        env:
-          CI_EVENT: ${{ github.event_name }}
-          BASE_REF: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || 'HEAD~1' }}
-          HEAD_REF: ${{ github.sha }}
-        run: node scripts/ci-affected.mjs
+        uses: ./.github/actions/detect-affected
 
   lint:
     name: Lint
@@ -92,9 +78,7 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '26'
-      - *cache_pnpm
-      - *setup_pnpm
-      - *pnpm_install
+      - uses: ./.github/actions/pnpm-install
       - name: Lint affected packages
         env:
           TURBO_FILTER: ${{ needs.detect-changes.outputs.turbo_filter }}
@@ -158,9 +142,7 @@ jobs:
     steps:
       - *checkout
       - *setup_node
-      - *cache_pnpm
-      - *setup_pnpm
-      - *pnpm_install
+      - uses: ./.github/actions/pnpm-install
       - name: Typecheck affected packages
         env:
           TURBO_FILTER: ${{ needs.detect-changes.outputs.turbo_filter }}
@@ -201,9 +183,7 @@ jobs:
     steps:
       - *checkout
       - *setup_node
-      - *cache_pnpm
-      - *setup_pnpm
-      - *pnpm_install
+      - uses: ./.github/actions/pnpm-install
       - name: Test affected packages
         env:
           TURBO_FILTER: ${{ needs.detect-changes.outputs.turbo_filter }}
@@ -232,9 +212,7 @@ jobs:
     steps:
       - *checkout
       - *setup_node
-      - *cache_pnpm
-      - *setup_pnpm
-      - *pnpm_install
+      - uses: ./.github/actions/pnpm-install
       - name: Build affected packages
         env:
           TURBO_FILTER: ${{ needs.detect-changes.outputs.turbo_filter }}
@@ -253,19 +231,17 @@ jobs:
     # Linux only (HISS-21, #328): job runs in the Playwright Linux container image.
     # Image tag must equal the lockfile Playwright version; scripts/check-playwright-image.mjs enforces.
     runs-on: ubuntu-26.04
-    container:
+    container: &playwright_container
       image: mcr.microsoft.com/playwright:v1.65.1-resolute@sha256:dcf385f7a31aa1cbb0a7a0c97a539142bf70480b661f89f26a774ec1fe2edd1d
       options: --user 1001
     # Job steps resolve browsers under HOME otherwise; image preinstalls to /ms-playwright.
-    env:
+    env: &playwright_env
       PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
     timeout-minutes: 15
     steps:
       - *checkout
       - *setup_node
-      - *cache_pnpm
-      - *setup_pnpm
-      - *pnpm_install
+      - uses: ./.github/actions/pnpm-install
       # Every story is rendered in Chromium, Firefox and WebKit; an axe violation or a render error fails the run.
       # Stories come from every package, so the run is not narrowed to the affected ones.
       - name: Run every story with axe
@@ -287,19 +263,13 @@ jobs:
     # Linux only (HISS-21, #328): job runs in the Playwright Linux container image.
     # Image tag must equal the lockfile Playwright version; scripts/check-playwright-image.mjs enforces.
     runs-on: ubuntu-26.04
-    container:
-      image: mcr.microsoft.com/playwright:v1.65.1-resolute@sha256:dcf385f7a31aa1cbb0a7a0c97a539142bf70480b661f89f26a774ec1fe2edd1d
-      options: --user 1001
-    # Job steps resolve browsers under HOME otherwise; image preinstalls to /ms-playwright.
-    env:
-      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+    container: *playwright_container
+    env: *playwright_env
     timeout-minutes: 15
     steps:
       - *checkout
       - *setup_node
-      - *cache_pnpm
-      - *setup_pnpm
-      - *pnpm_install
+      - uses: ./.github/actions/pnpm-install
       # auth, media, shell and apps/docs define `test:e2e`; the filter narrows the run to the affected ones.
       - name: Run end-to-end tests of affected packages
         env:
@@ -331,18 +301,13 @@ jobs:
     # Linux only (HISS-21, #328): baselines are generated in the Playwright Linux container
     # image so screenshots are platform-stable across developer machines and CI.
     runs-on: ubuntu-26.04
-    container:
-      image: mcr.microsoft.com/playwright:v1.65.1-resolute@sha256:dcf385f7a31aa1cbb0a7a0c97a539142bf70480b661f89f26a774ec1fe2edd1d
-      options: --user 1001
-    env:
-      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+    container: *playwright_container
+    env: *playwright_env
     timeout-minutes: 15
     steps:
       - *checkout
       - *setup_node
-      - *cache_pnpm
-      - *setup_pnpm
-      - *pnpm_install
+      - uses: ./.github/actions/pnpm-install
       - name: Run visual regression tests
         env:
           HAS_STORIES: ${{ needs.detect-changes.outputs.has_stories }}
@@ -375,9 +340,7 @@ jobs:
     steps:
       - *checkout
       - *setup_node
-      - *cache_pnpm
-      - *setup_pnpm
-      - *pnpm_install
+      - uses: ./.github/actions/pnpm-install
       - run: pnpm audit --audit-level=high
 
   # Declared by the security:high facet. gitleaks owns secret scanning; trivy below scans
@@ -527,12 +490,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: '26'
-      - *cache_pnpm
-      - *setup_pnpm
-      - *pnpm_install
+      - *setup_node
+      - uses: ./.github/actions/pnpm-install
       - name: Check that every label an issue form names exists
         env:
           GITHUB_TOKEN: ${{ github.token }}
