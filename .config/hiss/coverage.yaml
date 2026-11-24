@@ -94,7 +94,11 @@ rules:
           pre-commit and pre-push hooks and in verify-all, reports a
           `while (true)` with no scalar bound. No rule requires an AbortSignal
           on fetch; `@typescript-eslint/recommended-type-checked` contains
-          nothing for either shape.
+          nothing for either shape. The semgrep rule `child-process-deadline`
+          (.semgrep.yml, CI job Custom SAST) refuses a child_process call
+          without a literal `timeout` option across the tracked tree, replayed
+          both directions by `scripts/semgrep-scan.sh --test` against
+          .config/semgrep/testdata/.
         rationale: >-
           The unbounded loop was a gap fixture until engine 7cf9cbb2d8cc, whose
           scanner reads TypeScript and reports it; the fixture moved to

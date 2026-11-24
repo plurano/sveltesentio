@@ -1,8 +1,16 @@
 import assert from 'node:assert/strict';
-import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import {
+	chmodSync,
+	mkdirSync,
+	mkdtempSync,
+	readFileSync,
+	readdirSync,
+	rmSync,
+	writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, posix } from 'node:path';
+import { delimiter, join, posix } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import {
@@ -21,8 +29,10 @@ import {
 	resolvePrettierFiles,
 	runCiAffected,
 } from './ci-affected.mjs';
+import { trackedFiles } from './git-tracked.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
+const CLI_DEADLINE_MS = 60_000;
 
 describe('ci-affected: analyzeChanges', () => {
 	it('handles empty list or null/undefined inputs', () => {
@@ -296,9 +306,7 @@ describe('ci-affected: loadRootReaders', () => {
 });
 
 describe('ci-affected: every file a package reads outside the package folders selects it', () => {
-	const tracked = execFileSync('git', ['ls-files', '-z'], { cwd: root, encoding: 'utf8' })
-		.split('\0')
-		.filter(Boolean);
+	const tracked = trackedFiles(root);
 	const trackedSet = new Set(tracked);
 	const packageDirs = Object.keys(PACKAGE_DIRECTORY_MAP).map((dir) => `${dir}/`);
 	const inPackage = (/** @type {string} */ path) => packageDirs.some((dir) => path.startsWith(dir));
@@ -404,6 +412,26 @@ describe('ci-affected: getGitDiffFiles', () => {
 		}
 	});
 
+	// A shell script stands in for git; Windows runs no extensionless script.
+	const stub =
+		process.platform === 'win32' ? 'Windows cannot run the shell-script git stub' : false;
+	it('stops a git diff that runs past its deadline', { timeout: 20_000, skip: stub }, () => {
+		const dir = mkdtempSync(join(tmpdir(), 'ci-affected-'));
+		const path = process.env.PATH;
+		try {
+			writeFileSync(join(dir, 'git'), '#!/bin/sh\nexec sleep 10\n');
+			chmodSync(join(dir, 'git'), 0o755);
+			process.env.PATH = `${dir}${delimiter}${path}`;
+			assert.throws(
+				() => getGitDiffFiles('HEAD', 'HEAD', 200),
+				/ci-affected: git diff HEAD\.\.\.HEAD failed \(timed out after 200 ms\)$/,
+			);
+		} finally {
+			process.env.PATH = path;
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
 	it('does not read a ref that starts with a dash as a git option', () => {
 		const dir = mkdtempSync(join(tmpdir(), 'ci-affected-'));
 		try {
@@ -428,6 +456,7 @@ describe('ci-affected: runCiAffected and scope detection', () => {
 		try {
 			const res = spawnSync(process.execPath, [join(root, 'scripts/ci-affected.mjs'), ...args], {
 				encoding: 'utf8',
+				timeout: CLI_DEADLINE_MS,
 				env: {
 					...process.env,
 					GITHUB_OUTPUT: outputFile,

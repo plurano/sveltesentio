@@ -74,6 +74,157 @@ rules:
       - pattern-not: '$F(..., {..., shell: false, ...})'
       - pattern-not: '$C.$F(..., {..., shell: false, ...})'
 
+  - id: child-process-deadline
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      A child process started without a `timeout` option can hang the caller
+      with no deadline (HISS-02); pass `timeout` in the options object literal.
+    patterns:
+      - pattern-either:
+          # Named import or destructured require / dynamic import, plain or
+          # renamed: $L is the local name of the child_process function,
+          # called bare or promisified.
+          - patterns:
+              - pattern-either:
+                  - patterns:
+                      - pattern-inside: |
+                          import { ..., $L, ... } from '$MOD';
+                          ...
+                      - metavariable-regex:
+                          metavariable: $L
+                          regex: ^(exec|execFile|execFileSync|execSync|fork|spawn|spawnSync)$
+                  - patterns:
+                      - pattern-inside: |
+                          import { ..., $F as $L, ... } from '$MOD';
+                          ...
+                      - metavariable-regex:
+                          metavariable: $F
+                          regex: ^(exec|execFile|execFileSync|execSync|fork|spawn|spawnSync)$
+                  - patterns:
+                      - pattern-either:
+                          - pattern-inside: |
+                              const { ..., $L, ... } = require('$MOD');
+                              ...
+                          - pattern-inside: |
+                              const { ..., $L, ... } = await import('$MOD');
+                              ...
+                      - metavariable-regex:
+                          metavariable: $L
+                          regex: ^(exec|execFile|execFileSync|execSync|fork|spawn|spawnSync)$
+                  - patterns:
+                      - pattern-either:
+                          - pattern-inside: |
+                              const { ..., $F: $L, ... } = require('$MOD');
+                              ...
+                          - pattern-inside: |
+                              const { ..., $F: $L, ... } = await import('$MOD');
+                              ...
+                      - metavariable-regex:
+                          metavariable: $F
+                          regex: ^(exec|execFile|execFileSync|execSync|fork|spawn|spawnSync)$
+              - pattern-either:
+                  - pattern: $L(...)
+                  - patterns:
+                      - pattern-inside: |
+                          import { ..., $UFN, ... } from '$UTIL';
+                          ...
+                      - metavariable-regex:
+                          metavariable: $UTIL
+                          regex: ^(node:)?util$
+                      - pattern-either:
+                          - pattern: promisify($L)(...)
+                          - patterns:
+                              - pattern-inside: |
+                                  $X = promisify($L);
+                                  ...
+                              - pattern: $X(...)
+                  - patterns:
+                      - pattern-either:
+                          - pattern-inside: |
+                              import * as $U from '$UTIL';
+                              ...
+                          - pattern-inside: |
+                              import $U from '$UTIL';
+                              ...
+                          - pattern-inside: |
+                              $U = require('$UTIL');
+                              ...
+                      - metavariable-regex:
+                          metavariable: $UTIL
+                          regex: ^(node:)?util$
+                      - pattern-either:
+                          - pattern: $U.promisify($L)(...)
+                          - patterns:
+                              - pattern-inside: |
+                                  $X = $U.promisify($L);
+                                  ...
+                              - pattern: $X(...)
+          # Namespace, default, require or dynamic-import binding: the call
+          # goes through it.
+          - patterns:
+              - pattern-either:
+                  - pattern-inside: |
+                      import * as $CP from '$MOD';
+                      ...
+                  - pattern-inside: |
+                      import $CP from '$MOD';
+                      ...
+                  - pattern-inside: |
+                      $CP = require('$MOD');
+                      ...
+                  - pattern-inside: |
+                      $CP = await import('$MOD');
+                      ...
+              - metavariable-regex:
+                  metavariable: $F
+                  regex: ^(exec|execFile|execFileSync|execSync|fork|spawn|spawnSync)$
+              - pattern-either:
+                  - pattern: $CP.$F(...)
+                  - patterns:
+                      - pattern-inside: |
+                          import { ..., $UFN, ... } from '$UTIL';
+                          ...
+                      - metavariable-regex:
+                          metavariable: $UTIL
+                          regex: ^(node:)?util$
+                      - pattern-either:
+                          - pattern: promisify($CP.$F)(...)
+                          - patterns:
+                              - pattern-inside: |
+                                  $X = promisify($CP.$F);
+                                  ...
+                              - pattern: $X(...)
+                  - patterns:
+                      - pattern-either:
+                          - pattern-inside: |
+                              import * as $U from '$UTIL';
+                              ...
+                          - pattern-inside: |
+                              import $U from '$UTIL';
+                              ...
+                          - pattern-inside: |
+                              $U = require('$UTIL');
+                              ...
+                      - metavariable-regex:
+                          metavariable: $UTIL
+                          regex: ^(node:)?util$
+                      - pattern-either:
+                          - pattern: $U.promisify($CP.$F)(...)
+                          - patterns:
+                              - pattern-inside: |
+                                  $X = $U.promisify($CP.$F);
+                                  ...
+                              - pattern: $X(...)
+      - metavariable-regex:
+          metavariable: $MOD
+          regex: ^(node:)?child_process$
+      # Allow-list: only an options object literal with a `timeout` key is accepted.
+      - pattern-not: '$CALL_FN(..., {..., timeout: $T, ...}, ...)'
+      - pattern-not: '$CALL_OBJ.$CALL_FN(..., {..., timeout: $T, ...}, ...)'
+      - pattern-not: '$CALL_P(...)(..., {..., timeout: $T, ...}, ...)'
+      - pattern-not: '$CALL_OBJ.$CALL_P(...)(..., {..., timeout: $T, ...}, ...)'
+
   - id: no-unsanitised-html-sink
     languages: [javascript, typescript]
     severity: ERROR
