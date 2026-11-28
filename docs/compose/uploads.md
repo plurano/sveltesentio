@@ -20,10 +20,13 @@ For apps that want the Uppy Dashboard UI, see
 ## Install
 
 ```bash
-pnpm add tus-js-client exifr file-type
+pnpm add tus-js-client exifr file-type svelte-sonner
 ```
 
 Peers: `tus-js-client@^4.3`, `exifr@^7.1`, `file-type@^22.0`.
+
+`svelte-sonner` is only for the toast feedback in the `Progress + cancellation UI` example below.
+
 `file-type` ships both default and `/types` (browser-safe) exports;
 use the browser entry:
 
@@ -203,7 +206,7 @@ tus expects `PATCH` with `Content-Type: application/offset+octet-stream`
 ```svelte
 <script lang="ts">
   import { uploadFile, UploadRejection } from '#lib/uploads/pipeline.js';
-  import { toast } from '@sveltesentio/ui/toast';
+  import { toast } from 'svelte-sonner';
 
   let progress = $state(0);
   let uploader = $state<tus.Upload | null>(null);

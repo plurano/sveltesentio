@@ -43,8 +43,10 @@ same pending challenge so replay attacks fail server-side.
 ## Install
 
 ```bash
-pnpm add @sveltesentio/auth
+pnpm add @sveltesentio/auth svelte-sonner
 ```
+
+`svelte-sonner` provides `toast` for the `Narrow the error` and `Enrollment` examples below.
 
 ## Narrow the error
 
@@ -186,7 +188,7 @@ completes. No intent storage, no route reload.
 <!-- src/routes/account/security/+page.svelte -->
 <script lang="ts">
   import { MfaEnroll } from '@sveltesentio/auth';
-  import { toast } from '@sveltesentio/ui/toast';
+  import { toast } from 'svelte-sonner';
 </script>
 
 <section>

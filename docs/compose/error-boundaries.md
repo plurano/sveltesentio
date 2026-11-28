@@ -400,10 +400,12 @@ export async function load({ params, locals }) {
 
 ## Layer 3 — in-component error recovery
 
+The component below shows toasts from `svelte-sonner` (`pnpm add svelte-sonner`), mounted once as in [toast.md](toast.md).
+
 ```svelte
 <!-- src/routes/checkout/+page.svelte -->
 <script lang="ts">
-  import { toast } from '@sveltesentio/ui/toast';
+  import { toast } from 'svelte-sonner';
   import { isProblemError } from '@sveltesentio/core/errors';
 
   let loading = $state(false);
