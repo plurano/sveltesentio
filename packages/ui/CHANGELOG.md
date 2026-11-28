@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.10.1](https://github.com/plurano/sveltesentio/compare/ui-v0.10.0...ui-v0.10.1) (2026-11-28)
+
+### Code Refactoring
+
+- **ui:** share one top-layer dialog shell for Dialog and CommandPalette ([#691](https://github.com/plurano/sveltesentio/issues/691)) ([b5cfec8](https://github.com/plurano/sveltesentio/commit/b5cfec8f45b5bacc13305370603cff3185e3dcaa))
+
 ## [0.10.0](https://github.com/plurano/sveltesentio/compare/ui-v0.9.1...ui-v0.10.0) (2026-11-23)
 
 ### ⚠ BREAKING CHANGES
