@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.4](https://github.com/plurano/sveltesentio/compare/testing-v0.4.3...testing-v0.4.4) (2026-11-28)
+
+
+### Bug Fixes
+
+* **scripts:** give every child process a deadline ([#695](https://github.com/plurano/sveltesentio/issues/695)) ([bdd785e](https://github.com/plurano/sveltesentio/commit/bdd785e542e7ee9e290db795cb14951863a0488c)), closes [#645](https://github.com/plurano/sveltesentio/issues/645)
+
 ## [0.4.3](https://github.com/plurano/sveltesentio/compare/testing-v0.4.2...testing-v0.4.3) (2026-11-22)
 
 ### Bug Fixes
